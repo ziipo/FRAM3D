@@ -1,1 +1,7 @@
-node_modules/\ndist/\n.DS_Store
+node_modules/
+dist/
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.env.*.local

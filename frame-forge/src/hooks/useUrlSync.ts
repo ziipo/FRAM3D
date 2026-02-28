@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useFrameStore, selectFrameParams } from '../store/useFrameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { getParamsFromUrl, updateUrlHash } from '../utils/urlParams';
 
 /**
@@ -8,7 +9,7 @@ import { getParamsFromUrl, updateUrlHash } from '../utils/urlParams';
  * - On parameter changes, updates URL hash (debounced)
  */
 export function useUrlSync() {
-  const params = useFrameStore(selectFrameParams);
+  const params = useFrameStore(useShallow(selectFrameParams));
   const setParams = useFrameStore((s) => s.setParams);
   const isInitialMount = useRef(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useFrameStore, selectFrameParams } from '../store/useFrameStore';
+import { useShallow } from 'zustand/react/shallow';
 import type { WorkerResponse, GenerateMessage } from '../types/frame';
 
 // Import worker as URL for Vite
@@ -13,7 +14,7 @@ export function useFrameWorker() {
   const workerRef = useRef<Worker | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const params = useFrameStore(selectFrameParams);
+  const params = useFrameStore(useShallow(selectFrameParams));
   const setGenerating = useFrameStore((s) => s.setGenerating);
   const setProgress = useFrameStore((s) => s.setProgress);
   const setError = useFrameStore((s) => s.setError);

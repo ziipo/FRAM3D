@@ -13,22 +13,33 @@ const INV_SQRT2 = 1 / SQRT2;
  *   Y: [0, frameDepth]  — back at 0, front at frameDepth
  *   Z: [0, length]      — extrusion axis
  *
- * After miters, the segment is a trapezoidal prism:
- *   At X=0 (inner):          full length [0, length]
- *   At X=frameWidth (outer): shortened [frameWidth, length - frameWidth]
+ * The miters cut from the INNER edge (x=0), leaving the outer edge (x=frameWidth)
+ * at full length so that outer corners meet at 90°:
+ *   At X=0 (inner):          shortened [frameWidth, length - frameWidth]
+ *   At X=frameWidth (outer): full length [0, length]
  */
 export function buildFrameSegment(
   _wasm: ManifoldToplevel,
   profile: CrossSection,
-  length: number
+  length: number,
+  frameWidth: number
 ): Manifold {
   let segment = profile.extrude(length);
 
-  // Start miter (z=0 end): keep z ≥ x
-  segment = segment.trimByPlane([-INV_SQRT2, 0, INV_SQRT2], 0);
+  // Start miter (z=0 end): keep x + z ≥ frameWidth
+  // At outer edge (x=frameWidth): keeps z ≥ 0 (full length)
+  // At inner edge (x=0): keeps z ≥ frameWidth (45° cut)
+  segment = segment.trimByPlane([INV_SQRT2, 0, INV_SQRT2], frameWidth / SQRT2);
 
   // End miter (z=length end): keep x + z ≤ length
-  segment = segment.trimByPlane([-INV_SQRT2, 0, -INV_SQRT2], -length / SQRT2);
+  // At outer edge (x=frameWidth): keeps z ≤ length - frameWidth... wait
+  // We want: at outer (x=fW), keep z ≤ length; at inner (x=0), keep z ≤ length - fW
+  // That's: keep (length - fW) - z + x ≥ 0 → keep x - z ≥ fW - length
+  // Normal [1/√2, 0, -1/√2], offset (fW - length)/√2
+  segment = segment.trimByPlane(
+    [INV_SQRT2, 0, -INV_SQRT2],
+    (frameWidth - length) / SQRT2
+  );
 
   return segment;
 }

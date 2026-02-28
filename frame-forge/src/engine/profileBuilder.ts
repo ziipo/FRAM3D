@@ -10,12 +10,15 @@ import type { FrameProfile } from '../types/frame';
  *
  * Output cross-section coordinate system:
  *   X: 0 (inner) to frameWidth (outer)
- *   Y: 0 (bottom) to frameDepth (top)
+ *   Y: 0 (back/bottom) to frameDepth (front/top)
  *
- * The polygon is constructed counter-clockwise (positive winding for Manifold):
- *   (frameWidth, 0) → [profile top-surface points, outer to inner] →
- *   (rabbetWidth, frameDepth) → (rabbetWidth, rabbetLedgeY) →
- *   (0, rabbetLedgeY) → (0, 0) → close
+ * The rabbet notch is at the BACK (low Y) on the inner edge:
+ *   (0, rabbetDepth) → (rabbetWidth, rabbetDepth) → (rabbetWidth, 0)
+ *
+ * The profile top surface is at the FRONT (high Y):
+ *   Decorative face from inner to outer at Y near frameDepth
+ *
+ * The polygon is constructed counter-clockwise (positive winding for Manifold).
  */
 export function buildProfileCrossSection(
   wasm: ManifoldToplevel,
@@ -25,12 +28,7 @@ export function buildProfileCrossSection(
   rabbetWidth: number,
   rabbetDepth: number
 ): CrossSection {
-  const rabbetLedgeY = frameDepth - rabbetDepth;
-
   // Extract only the top-surface points from the profile.
-  // Profile points define the full outline (top + sides + bottom).
-  // The top-surface points are those that form the decorative face,
-  // running from inner edge (x≈0) to outer edge (x≈1).
   const topPoints = extractTopSurface(profile.points);
 
   // Scale normalized top-surface points to actual dimensions
@@ -40,53 +38,46 @@ export function buildProfileCrossSection(
   ]);
 
   // Filter to only points past the rabbet boundary (x >= rabbetWidth).
-  // We'll connect from (rabbetWidth, frameDepth) to these points.
   const profilePoints: Vec2[] = scaledTop.filter(
     (p) => p[0] >= rabbetWidth - 0.001
   );
 
-  // Reverse profile points so they go from outer (high x) to inner (low x).
-  // This lets us build the polygon in CCW order (positive signed area).
-  const profileReversed = [...profilePoints].reverse();
-
   // Build the closed polygon in counter-clockwise order.
-  // CCW in standard 2D (Y-up): outer-bottom → outer-top → along top inward →
-  // rabbet boundary → rabbet shelf → inner edge → inner-bottom → close
+  // CCW in standard 2D (Y-up):
+  //   outer-bottom → outer-top → [profile points, outer to inner] →
+  //   inner-top → rabbet back wall → rabbet shelf → inner-bottom → close
   const polygon: Vec2[] = [];
 
-  // Start at outer-bottom corner
+  // Start at outer-back corner
   polygon.push([frameWidth, 0]);
 
-  // Add profile top-surface points from outer to inner (reversed)
-  // First ensure we connect from outer edge to the first profile point
-  if (profileReversed.length > 0) {
-    const first = profileReversed[0];
-    // If first reversed point isn't at outer edge, add outer-top connection
-    if (Math.abs(first[0] - frameWidth) > 0.001) {
-      polygon.push([frameWidth, first[1]]);
+  // Up the outer edge to the outer-front corner
+  // Find the outermost profile point's Y to connect properly
+  const outerProfileY = profilePoints.length > 0
+    ? profilePoints[profilePoints.length - 1][1]
+    : frameDepth;
+  polygon.push([frameWidth, outerProfileY]);
+
+  // Profile top-surface points from outer to inner (reversed for CCW)
+  const profileReversed = [...profilePoints].reverse();
+  for (const p of profileReversed) {
+    const last = polygon[polygon.length - 1];
+    const dx = Math.abs(p[0] - last[0]);
+    const dy = Math.abs(p[1] - last[1]);
+    if (dx > 0.001 || dy > 0.001) {
+      polygon.push(p);
     }
-    for (const p of profileReversed) {
-      const last = polygon[polygon.length - 1];
-      const dx = Math.abs(p[0] - last[0]);
-      const dy = Math.abs(p[1] - last[1]);
-      if (dx > 0.001 || dy > 0.001) {
-        polygon.push(p);
-      }
-    }
-  } else {
-    // No profile points past rabbet — just go up outer edge
-    polygon.push([frameWidth, frameDepth]);
   }
 
-  // Connect from last profile point down to rabbet boundary top
-  polygon.push([rabbetWidth, frameDepth]);
+  // From innermost profile point, go up to full height at inner edge
+  // (profile starts at x≈rabbetWidth after filtering)
+  // Then the rabbet: notch cut into the BACK (low Y) of the inner edge
+  polygon.push([0, frameDepth]);          // Inner edge, front face
+  polygon.push([0, rabbetDepth]);         // Inner edge, down to rabbet shelf
+  polygon.push([rabbetWidth, rabbetDepth]); // Rabbet shelf, horizontal
+  polygon.push([rabbetWidth, 0]);          // Rabbet back wall, down to back
 
-  // Rabbet shelf: go down to shelf level, then left to inner edge
-  polygon.push([rabbetWidth, rabbetLedgeY]);
-  polygon.push([0, rabbetLedgeY]);
-
-  // Inner edge: go down to bottom
-  polygon.push([0, 0]);
+  // Close back to outer-back corner (implicit, but ensure no gap)
 
   // Deduplicate consecutive points that are too close
   const cleaned: Vec2[] = [polygon[0]];

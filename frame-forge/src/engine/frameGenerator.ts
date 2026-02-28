@@ -50,10 +50,11 @@ function generateProfiledFrame(
   );
 
   // Build 4 mitered segments (2 horizontal at outerWidth, 2 vertical at outerHeight)
-  const bottomRaw = buildFrameSegment(wasm, crossSection, dims.outerWidth);
-  const topRaw = buildFrameSegment(wasm, crossSection, dims.outerWidth);
-  const leftRaw = buildFrameSegment(wasm, crossSection, dims.outerHeight);
-  const rightRaw = buildFrameSegment(wasm, crossSection, dims.outerHeight);
+  const fw = params.frameWidth;
+  const bottomRaw = buildFrameSegment(wasm, crossSection, dims.outerWidth, fw);
+  const topRaw = buildFrameSegment(wasm, crossSection, dims.outerWidth, fw);
+  const leftRaw = buildFrameSegment(wasm, crossSection, dims.outerHeight, fw);
+  const rightRaw = buildFrameSegment(wasm, crossSection, dims.outerHeight, fw);
 
   // Position each segment around the frame
   const bottom = positionBottomSegment(bottomRaw, dims, params);

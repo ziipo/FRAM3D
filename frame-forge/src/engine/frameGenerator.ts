@@ -1,60 +1,125 @@
 import type { Manifold, ManifoldToplevel, Mesh } from 'manifold-3d';
 import type { FrameParams, ComputedDimensions } from '../types/frame';
 import { getPictureSize } from '../data/presets';
+import { getProfile } from '../data/profiles';
+import { buildProfileCrossSection } from './profileBuilder';
+import {
+  buildFrameSegment,
+  positionBottomSegment,
+  positionTopSegment,
+  positionLeftSegment,
+  positionRightSegment,
+} from './segmentBuilder';
 
 /**
  * Main frame generation function.
- * Creates a picture frame using CSG boolean operations:
- * 1. Outer box - Inner box = basic frame shell
- * 2. Subtract rabbet channel for the picture/glass to sit in
+ * Builds a picture frame from 4 individually extruded+mitered profile segments.
+ * Falls back to box-CSG if profile-based generation fails.
  */
 export function generateFrame(
   wasm: ManifoldToplevel,
   params: FrameParams
 ): { manifold: Manifold; mesh: Mesh; dimensions: ComputedDimensions } {
   const dims = computeDimensions(params);
-  const { Manifold: M } = wasm;
 
-  // Create outer box (full frame outline)
-  const outerBox = M.cube(
-    [dims.outerWidth, dims.outerHeight, params.frameDepth],
-    true // center at origin
+  try {
+    return generateProfiledFrame(wasm, params, dims);
+  } catch {
+    return generateBoxFrame(wasm, params, dims);
+  }
+}
+
+/**
+ * Profile-based frame generation using 4 extruded+mitered segments.
+ */
+function generateProfiledFrame(
+  wasm: ManifoldToplevel,
+  params: FrameParams,
+  dims: ComputedDimensions
+): { manifold: Manifold; mesh: Mesh; dimensions: ComputedDimensions } {
+  const profile = getProfile(params.profileId) || getProfile('flat')!;
+
+  // Build the 2D cross-section from profile data
+  const crossSection = buildProfileCrossSection(
+    wasm,
+    profile,
+    params.frameWidth,
+    params.frameDepth,
+    params.rabbetWidth,
+    params.rabbetDepth
   );
 
-  // Create inner cutout (the opening for the picture)
+  // Build 4 mitered segments (2 horizontal at outerWidth, 2 vertical at outerHeight)
+  const bottomRaw = buildFrameSegment(wasm, crossSection, dims.outerWidth);
+  const topRaw = buildFrameSegment(wasm, crossSection, dims.outerWidth);
+  const leftRaw = buildFrameSegment(wasm, crossSection, dims.outerHeight);
+  const rightRaw = buildFrameSegment(wasm, crossSection, dims.outerHeight);
+
+  // Position each segment around the frame
+  const bottom = positionBottomSegment(bottomRaw, dims, params);
+  const top = positionTopSegment(topRaw, dims, params);
+  const left = positionLeftSegment(leftRaw, dims, params);
+  const right = positionRightSegment(rightRaw, dims, params);
+
+  // Union all 4 segments
+  const frame = wasm.Manifold.union([bottom, top, left, right]);
+
+  // Clean up intermediates
+  crossSection.delete();
+  bottomRaw.delete();
+  topRaw.delete();
+  leftRaw.delete();
+  rightRaw.delete();
+  bottom.delete();
+  top.delete();
+  left.delete();
+  right.delete();
+
+  const mesh = frame.getMesh();
+  return { manifold: frame, mesh, dimensions: dims };
+}
+
+/**
+ * Fallback box-CSG frame generation (flat profile only).
+ * Original approach: outerBox - innerBox - rabbet.
+ */
+function generateBoxFrame(
+  wasm: ManifoldToplevel,
+  params: FrameParams,
+  dims: ComputedDimensions
+): { manifold: Manifold; mesh: Mesh; dimensions: ComputedDimensions } {
+  const { Manifold: M } = wasm;
+
+  const outerBox = M.cube(
+    [dims.outerWidth, dims.outerHeight, params.frameDepth],
+    true
+  );
+
   const innerBox = M.cube(
     [dims.innerWidth, dims.innerHeight, params.frameDepth + 2],
     true
   );
 
-  // Subtract inner from outer to get the basic frame shape
   let frame = M.difference(outerBox, innerBox);
 
-  // Create rabbet channel - a shallow ledge around the inside edge
-  // where the glass/picture/backing sits
   const rabbetW = dims.innerWidth + 2 * params.rabbetWidth;
   const rabbetH = dims.innerHeight + 2 * params.rabbetWidth;
   const rabbetBox = M.cube([rabbetW, rabbetH, params.rabbetDepth], false);
 
-  // Position rabbet at the back of the frame (bottom in Z)
   const rabbetPositioned = rabbetBox.translate([
     -rabbetW / 2,
     -rabbetH / 2,
     -params.frameDepth / 2,
   ]);
 
-  // Subtract rabbet from frame
   frame = M.difference(frame, rabbetPositioned);
 
-  // Clean up intermediate geometry
   outerBox.delete();
   innerBox.delete();
   rabbetBox.delete();
   rabbetPositioned.delete();
 
-  // Get the mesh for rendering
   const mesh = frame.getMesh();
-
   return { manifold: frame, mesh, dimensions: dims };
 }
 

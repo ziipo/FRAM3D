@@ -42,7 +42,8 @@ async function handleGenerate(params: FrameParams): Promise<void> {
     sendProgress('Generating geometry...', 30);
 
     // Generate the frame
-    const { manifold: frame, mesh, dimensions } = generateFrame(manifold, params);
+    const result = generateFrame(manifold, params);
+    const { manifold: frame, mesh, dimensions } = result;
 
     sendProgress('Preparing mesh data...', 70);
 
@@ -109,7 +110,8 @@ async function handleGenerate(params: FrameParams): Promise<void> {
     // Log dimensions for debugging
     console.log('Frame dimensions:', dimensions);
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[Worker] Generation error:', errorMessage, error);
     const response: WorkerResponse = {
       type: 'error',
       error: errorMessage,

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useFrameStore, selectFrameParams } from '../../store/useFrameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { createShareUrl } from '../../utils/urlParams';
 
 export function Header() {
   const [copied, setCopied] = useState(false);
-  const params = useFrameStore(selectFrameParams);
+  const params = useFrameStore(useShallow(selectFrameParams));
 
   const handleShare = async () => {
     const url = createShareUrl(params);

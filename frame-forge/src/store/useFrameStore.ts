@@ -82,7 +82,7 @@ export const useFrameStore = create<FrameState>((set) => ({
     })),
 
   setGenerating: (isGenerating) =>
-    set({ isGenerating, error: isGenerating ? null : undefined }),
+    set(isGenerating ? { isGenerating, error: null } : { isGenerating }),
 
   setProgress: (progress, progressStage) =>
     set({ progress, progressStage }),

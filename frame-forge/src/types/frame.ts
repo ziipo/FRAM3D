@@ -77,10 +77,10 @@ export interface ConnectorSettings {
 
 // === Split Info ===
 export interface SplitInfo {
-  bottomSplit: boolean;
-  topSplit: boolean;
-  leftSplit: boolean;
-  rightSplit: boolean;
+  bottomPieces: number;  // 1 = whole, 2+ = split into N pieces
+  topPieces: number;
+  leftPieces: number;
+  rightPieces: number;
   totalParts: number;
 }
 

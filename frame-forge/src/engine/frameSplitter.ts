@@ -12,10 +12,10 @@ import {
 } from './segmentBuilder';
 
 export interface SplitPlan {
-  bottom: boolean;
-  top: boolean;
-  left: boolean;
-  right: boolean;
+  bottom: number; // 1 = no split, 2+ = number of pieces
+  top: number;
+  left: number;
+  right: number;
 }
 
 export interface SplitPart {
@@ -24,7 +24,7 @@ export interface SplitPart {
 }
 
 /**
- * Determine which sides need splitting based on build plate size.
+ * Determine how many pieces each side needs based on build plate size.
  * A part can be rotated on the plate, so we compare against the longest plate dimension.
  */
 export function computeSplitPlan(
@@ -35,10 +35,10 @@ export function computeSplitPlan(
   const maxPlate = Math.max(plateWidth, plateDepth);
 
   return {
-    bottom: dims.outerWidth > maxPlate,
-    top: dims.outerWidth > maxPlate,
-    left: dims.outerHeight > maxPlate,
-    right: dims.outerHeight > maxPlate,
+    bottom: Math.ceil(dims.outerWidth / maxPlate),
+    top: Math.ceil(dims.outerWidth / maxPlate),
+    left: Math.ceil(dims.outerHeight / maxPlate),
+    right: Math.ceil(dims.outerHeight / maxPlate),
   };
 }
 
@@ -83,10 +83,16 @@ export function splitFrameForExport(
   const parts: SplitPart[] = [];
 
   // Process each side: split if needed, otherwise export whole
-  processSide(wasm, bottomSide, 'bottom', plan.bottom, 'x', dims, params, connector, parts);
-  processSide(wasm, topSide, 'top', plan.top, 'x', dims, params, connector, parts);
-  processSide(wasm, leftSide, 'left', plan.left, 'y', dims, params, connector, parts);
-  processSide(wasm, rightSide, 'right', plan.right, 'y', dims, params, connector, parts);
+  // Bottom/top span X: [-outerWidth/2, +outerWidth/2]
+  // Left/right span Y: [-outerHeight/2, +outerHeight/2]
+  processSide(wasm, bottomSide, 'bottom', plan.bottom, 'x',
+    -dims.outerWidth / 2, dims.outerWidth / 2, dims, params, connector, parts);
+  processSide(wasm, topSide, 'top', plan.top, 'x',
+    -dims.outerWidth / 2, dims.outerWidth / 2, dims, params, connector, parts);
+  processSide(wasm, leftSide, 'left', plan.left, 'y',
+    -dims.outerHeight / 2, dims.outerHeight / 2, dims, params, connector, parts);
+  processSide(wasm, rightSide, 'right', plan.right, 'y',
+    -dims.outerHeight / 2, dims.outerHeight / 2, dims, params, connector, parts);
 
   // Clean up
   crossSection.delete();
@@ -109,79 +115,99 @@ export function splitFrameForExport(
 }
 
 /**
- * Process a single side: split at midpoint if needed, subtract dowel holes.
+ * Process a single side: split into N pieces if needed, subtract dowel holes at each cut.
  */
 function processSide(
   wasm: ManifoldToplevel,
   side: Manifold,
   sideName: string,
-  needsSplit: boolean,
+  pieceCount: number,
   splitAxis: 'x' | 'y',
+  axisMin: number,
+  axisMax: number,
   dims: ComputedDimensions,
   params: FrameParams,
   connector: ConnectorSettings,
   parts: SplitPart[]
 ): void {
-  if (!needsSplit) {
+  if (pieceCount <= 1) {
     // Export the whole side — create a new manifold so caller can safely delete the original
     parts.push({ name: `${sideName}.stl`, manifold: wasm.Manifold.union([side]) });
     return;
   }
 
-  // Split at midpoint using splitByPlane
-  // For horizontal sides (bottom/top), split along X (normal=[1,0,0], offset=0 → at X=0)
-  // For vertical sides (left/right), split along Y (normal=[0,1,0], offset=0 → at Y=0)
   const normal: [number, number, number] =
     splitAxis === 'x' ? [1, 0, 0] : [0, 1, 0];
 
-  const splitResult = side.splitByPlane(normal, 0);
-  // splitByPlane returns [positive_half, negative_half]
-  // positive_half: where dot(pos, normal) >= 0
-  // negative_half: where dot(pos, normal) < 0
-  const positiveHalf = splitResult[0];
-  const negativeHalf = splitResult[1];
-
-  // Create dowel holes centered on the cut plane
-  const dowelHoles = createDowelHoles(wasm, sideName, splitAxis, dims, params, connector);
-
-  // Subtract dowel holes from both halves
-  let positiveWithHoles = positiveHalf;
-  let negativeWithHoles = negativeHalf;
-
-  if (dowelHoles) {
-    positiveWithHoles = wasm.Manifold.difference(positiveHalf, dowelHoles);
-    // Need a fresh copy of dowelHoles since difference consumed it
-    const dowelHoles2 = createDowelHoles(wasm, sideName, splitAxis, dims, params, connector);
-    if (dowelHoles2) {
-      negativeWithHoles = wasm.Manifold.difference(negativeHalf, dowelHoles2);
-      dowelHoles2.delete();
-    }
-    dowelHoles.delete();
-    positiveHalf.delete();
-    negativeHalf.delete();
+  // Compute N-1 evenly spaced cut positions
+  const span = axisMax - axisMin;
+  const cutPositions: number[] = [];
+  for (let i = 1; i < pieceCount; i++) {
+    cutPositions.push(axisMin + (span * i) / pieceCount);
   }
 
-  // Name based on split axis direction
-  if (splitAxis === 'x') {
-    // X split: positive = right half, negative = left half
-    parts.push({ name: `${sideName}-right.stl`, manifold: positiveWithHoles });
-    parts.push({ name: `${sideName}-left.stl`, manifold: negativeWithHoles });
-  } else {
-    // Y split: positive = top half, negative = bottom half
-    parts.push({ name: `${sideName}-top.stl`, manifold: positiveWithHoles });
-    parts.push({ name: `${sideName}-bottom.stl`, manifold: negativeWithHoles });
+  // Generate each piece by trimming the full side with bounding planes
+  for (let j = 0; j < pieceCount; j++) {
+    let piece = wasm.Manifold.union([side]); // clone
+
+    // Trim the positive (high) end — all pieces except the last
+    if (j < pieceCount - 1) {
+      const cutHigh = cutPositions[j];
+      // trimByPlane keeps the region where dot(pos, normal) <= offset
+      // i.e. normal=[1,0,0], offset=cutHigh keeps everything with x <= cutHigh
+      const trimmed = piece.trimByPlane(normal, cutHigh);
+      piece.delete();
+      piece = trimmed;
+    }
+
+    // Trim the negative (low) end — all pieces except the first
+    if (j > 0) {
+      const cutLow = cutPositions[j - 1];
+      // Negate the normal and negate the offset to keep the region above cutLow
+      // negNormal with offset -cutLow keeps everything where dot(pos, -normal) <= -cutLow
+      // i.e. -x <= -cutLow → x >= cutLow
+      const negNormal: [number, number, number] = [
+        -normal[0], -normal[1], -normal[2],
+      ];
+      const trimmed = piece.trimByPlane(negNormal, -cutLow);
+      piece.delete();
+      piece = trimmed;
+    }
+
+    // Subtract dowel holes at each interior cut face bordering this piece
+    // Piece j borders: cutPositions[j-1] (low face) and cutPositions[j] (high face)
+    const adjacentCuts: number[] = [];
+    if (j > 0) adjacentCuts.push(cutPositions[j - 1]);
+    if (j < pieceCount - 1) adjacentCuts.push(cutPositions[j]);
+
+    for (const cutOffset of adjacentCuts) {
+      const holes = createDowelHolesAtOffset(
+        wasm, sideName, splitAxis, cutOffset, dims, params, connector
+      );
+      if (holes) {
+        const withHoles = wasm.Manifold.difference(piece, holes);
+        piece.delete();
+        holes.delete();
+        piece = withHoles;
+      }
+    }
+
+    // Name: {side}.stl if 1 piece, {side}-1.stl through {side}-N.stl if multi-split
+    const name = `${sideName}-${j + 1}.stl`;
+    parts.push({ name, manifold: piece });
   }
 }
 
 /**
- * Create dowel alignment holes at the cut face.
+ * Create dowel alignment holes at a specific cut offset along the split axis.
  * Cylinders are aligned with the split normal and centered on the cut plane,
  * so they span both halves equally.
  */
-function createDowelHoles(
+function createDowelHolesAtOffset(
   wasm: ManifoldToplevel,
   sideName: string,
   splitAxis: 'x' | 'y',
+  axisOffset: number,
   dims: ComputedDimensions,
   params: FrameParams,
   connector: ConnectorSettings
@@ -201,12 +227,6 @@ function createDowelHoles(
   }
 
   // Perpendicular position: center of the frame wall
-  // For bottom/top sides, the frame wall center Y:
-  //   bottom: -(outerHeight + innerHeight) / 4
-  //   top:    +(outerHeight + innerHeight) / 4
-  // For left/right sides, the frame wall center X:
-  //   left:   -(outerWidth + innerWidth) / 4
-  //   right:  +(outerWidth + innerWidth) / 4
   let perpPos: number;
   switch (sideName) {
     case 'bottom':
@@ -234,15 +254,15 @@ function createDowelHoles(
 
     let positioned: Manifold;
     if (splitAxis === 'x') {
-      // Rotate to align along X axis: rotate 90° around Y
+      // Rotate to align along X axis: rotate 90deg around Y
       positioned = cyl
         .rotate([0, 90, 0])
-        .translate([0, perpPos, z]);
+        .translate([axisOffset, perpPos, z]);
     } else {
-      // Rotate to align along Y axis: rotate 90° around X
+      // Rotate to align along Y axis: rotate 90deg around X
       positioned = cyl
         .rotate([90, 0, 0])
-        .translate([perpPos, 0, z]);
+        .translate([perpPos, axisOffset, z]);
     }
 
     cylinders.push(positioned);

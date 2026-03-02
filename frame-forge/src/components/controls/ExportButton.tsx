@@ -61,12 +61,12 @@ export function ExportButton() {
 
   // Build split info description
   const splitDescription = splitInfo ? (() => {
-    const splits: string[] = [];
-    if (splitInfo.bottomSplit) splits.push('bottom');
-    if (splitInfo.topSplit) splits.push('top');
-    if (splitInfo.leftSplit) splits.push('left');
-    if (splitInfo.rightSplit) splits.push('right');
-    return `${splitInfo.totalParts} parts` + (splits.length > 0 ? ` | ${splits.join(', ')} split` : '');
+    const details: string[] = [];
+    if (splitInfo.bottomPieces > 1) details.push(`bottom \u00d7${splitInfo.bottomPieces}`);
+    if (splitInfo.topPieces > 1) details.push(`top \u00d7${splitInfo.topPieces}`);
+    if (splitInfo.leftPieces > 1) details.push(`left \u00d7${splitInfo.leftPieces}`);
+    if (splitInfo.rightPieces > 1) details.push(`right \u00d7${splitInfo.rightPieces}`);
+    return `${splitInfo.totalParts} parts` + (details.length > 0 ? ` | ${details.join(', ')}` : '');
   })() : null;
 
   return (

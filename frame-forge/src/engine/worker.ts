@@ -424,10 +424,10 @@ async function handleSplitExport(
       type: 'split-export-result',
       zipData,
       splitInfo: {
-        bottomSplit: splitInfo.bottom,
-        topSplit: splitInfo.top,
-        leftSplit: splitInfo.left,
-        rightSplit: splitInfo.right,
+        bottomPieces: splitInfo.bottom,
+        topPieces: splitInfo.top,
+        leftPieces: splitInfo.left,
+        rightPieces: splitInfo.right,
         totalParts: splitInfo.totalParts,
       },
     };

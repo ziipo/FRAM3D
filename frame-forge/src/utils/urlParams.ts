@@ -1,4 +1,4 @@
-import type { FrameParams } from '../types/frame';
+import type { FrameParams, ProfilePoint } from '../types/frame';
 
 /**
  * Encodes frame parameters to a compact URL hash.
@@ -16,6 +16,14 @@ export function encodeParams(params: FrameParams): string {
     rw: Math.round(params.rabbetWidth * 10) / 10,  // rabbet width
     rd: Math.round(params.rabbetDepth * 10) / 10,  // rabbet depth
     u: params.displayUnit,          // unit
+    cp: params.profileId === 'custom'
+      ? params.customProfilePoints.flatMap(p => [
+          Math.round(p.x * 100) / 100,
+          Math.round(p.y * 100) / 100,
+          Math.round((p.hx ?? 0) * 100) / 100,
+          Math.round((p.hy ?? 0) * 100) / 100,
+        ])
+      : undefined,                   // custom profile points (4 values per point: x, y, hx, hy)
   };
 
   // Convert to base64 for URL-safe encoding
@@ -51,6 +59,32 @@ export function decodeParams(hash: string): Partial<FrameParams> | null {
     if (typeof data.rw === 'number') params.rabbetWidth = data.rw;
     if (typeof data.rd === 'number') params.rabbetDepth = data.rd;
     if (data.u === 'mm' || data.u === 'in') params.displayUnit = data.u;
+
+    // Deserialize custom profile points
+    // New format: 4 values per point (x, y, hx, hy); old format: 2 per point (x, y)
+    if (Array.isArray(data.cp) && data.cp.length >= 4) {
+      const points: ProfilePoint[] = [];
+      const stride = data.cp.length % 4 === 0 ? 4 : 2;
+      for (let i = 0; i + stride - 1 < data.cp.length; i += stride) {
+        const x = Number(data.cp[i]);
+        const y = Number(data.cp[i + 1]);
+        if (isNaN(x) || isNaN(y)) continue;
+        const pt: ProfilePoint = {
+          x: Math.max(0, Math.min(1, x)),
+          y: Math.max(0, Math.min(1, y)),
+        };
+        if (stride === 4) {
+          const hx = Number(data.cp[i + 2]);
+          const hy = Number(data.cp[i + 3]);
+          if (!isNaN(hx) && hx !== 0) pt.hx = hx;
+          if (!isNaN(hy) && hy !== 0) pt.hy = hy;
+        }
+        points.push(pt);
+      }
+      if (points.length >= 2) {
+        params.customProfilePoints = points;
+      }
+    }
 
     return params;
   } catch {

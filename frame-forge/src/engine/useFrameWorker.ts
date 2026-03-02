@@ -1,7 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useFrameStore, selectFrameParams } from '../store/useFrameStore';
 import { useShallow } from 'zustand/react/shallow';
-import type { WorkerResponse, GenerateMessage } from '../types/frame';
+import type { WorkerResponse, GenerateMessage, SplitExportMessage } from '../types/frame';
+import { getBuildPlatePreset } from '../data/buildPlates';
 
 // Import worker as URL for Vite
 import WorkerUrl from './worker.ts?worker&url';
@@ -20,6 +21,10 @@ export function useFrameWorker() {
   const setError = useFrameStore((s) => s.setError);
   const setMeshData = useFrameStore((s) => s.setMeshData);
   const setStlData = useFrameStore((s) => s.setStlData);
+  const setThreemfData = useFrameStore((s) => s.setThreemfData);
+  const setSplitExporting = useFrameStore((s) => s.setSplitExporting);
+  const setSplitExportResult = useFrameStore((s) => s.setSplitExportResult);
+  const setTriggerSplitExport = useFrameStore((s) => s.setTriggerSplitExport);
 
   // Initialize worker
   useEffect(() => {
@@ -33,7 +38,12 @@ export function useFrameWorker() {
         case 'result':
           setMeshData(response.mesh);
           setStlData(response.stlData);
+          setThreemfData(response.threemfData);
           setGenerating(false);
+          break;
+
+        case 'split-export-result':
+          setSplitExportResult(response.zipData, response.splitInfo);
           break;
 
         case 'progress':
@@ -42,19 +52,21 @@ export function useFrameWorker() {
 
         case 'error':
           setError(response.error);
+          setSplitExporting(false);
           break;
       }
     };
 
     worker.onerror = (event) => {
       setError(`Worker error: ${event.message}`);
+      setSplitExporting(false);
     };
 
     return () => {
       worker.terminate();
       workerRef.current = null;
     };
-  }, [setGenerating, setProgress, setError, setMeshData, setStlData]);
+  }, [setGenerating, setProgress, setError, setMeshData, setStlData, setThreemfData, setSplitExporting, setSplitExportResult]);
 
   // Generate function
   const generate = useCallback(() => {
@@ -70,6 +82,46 @@ export function useFrameWorker() {
 
     workerRef.current.postMessage(message);
   }, [params, setGenerating, setError]);
+
+  // Split export function
+  const splitExport = useCallback(() => {
+    if (!workerRef.current) return;
+
+    const state = useFrameStore.getState();
+    const preset = getBuildPlatePreset(state.buildPlatePresetId);
+
+    const plateWidth = state.buildPlatePresetId === 'custom'
+      ? state.buildPlateCustomWidth
+      : preset?.width ?? 220;
+    const plateDepth = state.buildPlatePresetId === 'custom'
+      ? state.buildPlateCustomDepth
+      : preset?.depth ?? 220;
+
+    setSplitExporting(true);
+    setError(null);
+
+    const message: SplitExportMessage = {
+      type: 'split-export',
+      params,
+      buildPlate: { width: plateWidth, depth: plateDepth },
+      connector: {
+        type: state.connectorType,
+        dowel: {
+          diameter: state.dowelDiameter,
+          depth: state.dowelDepth,
+          count: state.dowelCount,
+        },
+      },
+    };
+
+    workerRef.current.postMessage(message);
+  }, [params, setSplitExporting, setError]);
+
+  // Register splitExport in the store so ExportButton can call it
+  useEffect(() => {
+    setTriggerSplitExport(splitExport);
+    return () => setTriggerSplitExport(null);
+  }, [splitExport, setTriggerSplitExport]);
 
   // Debounced regeneration when params change
   useEffect(() => {

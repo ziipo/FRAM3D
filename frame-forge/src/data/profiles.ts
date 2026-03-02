@@ -1,4 +1,4 @@
-import type { FrameProfile, ProfilePoint } from '../types/frame';
+import type { FrameProfile, FrameParams, ProfilePoint } from '../types/frame';
 
 /**
  * Profile coordinate system:
@@ -147,4 +147,33 @@ export const defaultProfileId = 'flat';
 
 export function getProfile(id: string): FrameProfile | undefined {
   return frameProfiles.find((p) => p.id === id);
+}
+
+/**
+ * Get the profile for given params.
+ * For 'custom' profileId, builds a FrameProfile from customProfilePoints
+ * with auto-generated bottom closing points.
+ * For presets, delegates to getProfile().
+ */
+export function getProfileForParams(params: FrameParams): FrameProfile {
+  if (params.profileId === 'custom') {
+    // Sort points by x, then build full closed profile:
+    // top surface points (user-defined) + outer-bottom + inner-bottom
+    const sorted = [...params.customProfilePoints].sort((a, b) => a.x - b.x);
+
+    const points: ProfilePoint[] = [
+      ...sorted,              // Top surface (inner to outer)
+      { x: 1, y: 0 },        // Outer bottom
+      { x: 0, y: 0 },        // Inner bottom
+    ];
+
+    return {
+      id: 'custom',
+      name: 'Custom',
+      description: 'User-defined profile',
+      points,
+    };
+  }
+
+  return getProfile(params.profileId) || getProfile('flat')!;
 }

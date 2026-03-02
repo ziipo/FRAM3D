@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { FrameParams, Unit } from '../types/frame';
+import type { FrameParams, Unit, ProfilePoint, ConnectorType, SplitInfo } from '../types/frame';
 import { defaultPictureSizeId } from '../data/presets';
 import { defaultProfileId } from '../data/profiles';
 
@@ -20,6 +20,29 @@ interface FrameState extends FrameParams {
   // STL data (for export)
   stlData: ArrayBuffer | null;
 
+  // 3MF data (for export)
+  threemfData: ArrayBuffer | null;
+
+  // Build plate settings
+  buildPlatePresetId: string;
+  buildPlateCustomWidth: number;
+  buildPlateCustomDepth: number;
+  buildPlateEnabled: boolean;
+
+  // Connector settings
+  connectorType: ConnectorType;
+  dowelDiameter: number;
+  dowelDepth: number;
+  dowelCount: number;
+
+  // Split export state
+  isSplitExporting: boolean;
+  splitExportData: ArrayBuffer | null;
+  splitInfo: SplitInfo | null;
+
+  // Callback for triggering split export from ExportButton
+  triggerSplitExport: (() => void) | null;
+
   // Actions
   setParam: <K extends keyof FrameParams>(key: K, value: FrameParams[K]) => void;
   setParams: (params: Partial<FrameParams>) => void;
@@ -28,6 +51,19 @@ interface FrameState extends FrameParams {
   setError: (error: string | null) => void;
   setMeshData: (data: FrameState['meshData']) => void;
   setStlData: (data: ArrayBuffer | null) => void;
+  setThreemfData: (data: ArrayBuffer | null) => void;
+  setBuildPlatePresetId: (id: string) => void;
+  setBuildPlateCustomWidth: (width: number) => void;
+  setBuildPlateCustomDepth: (depth: number) => void;
+  setBuildPlateEnabled: (enabled: boolean) => void;
+  setConnectorType: (type: ConnectorType) => void;
+  setDowelDiameter: (diameter: number) => void;
+  setDowelDepth: (depth: number) => void;
+  setDowelCount: (count: number) => void;
+  setSplitExporting: (exporting: boolean) => void;
+  setSplitExportResult: (zipData: ArrayBuffer, info: SplitInfo) => void;
+  clearSplitExport: () => void;
+  setTriggerSplitExport: (fn: (() => void) | null) => void;
   resetToDefaults: () => void;
 }
 
@@ -49,6 +85,9 @@ const defaultParams: FrameParams = {
 
   // Display
   displayUnit: 'mm' as Unit,
+
+  // Custom profile
+  customProfilePoints: [{ x: 0, y: 1 }, { x: 1, y: 1 }] as ProfilePoint[],
 };
 
 export const useFrameStore = create<FrameState>((set) => ({
@@ -64,14 +103,35 @@ export const useFrameStore = create<FrameState>((set) => ({
   // Generated data
   meshData: null,
   stlData: null,
+  threemfData: null,
+
+  // Build plate settings
+  buildPlatePresetId: 'ender3',
+  buildPlateCustomWidth: 220,
+  buildPlateCustomDepth: 220,
+  buildPlateEnabled: false,
+
+  // Connector settings
+  connectorType: 'dowel' as ConnectorType,
+  dowelDiameter: 6,
+  dowelDepth: 10,
+  dowelCount: 2,
+
+  // Split export state
+  isSplitExporting: false,
+  splitExportData: null,
+  splitInfo: null,
+  triggerSplitExport: null,
 
   // Actions
   setParam: (key, value) =>
     set((state) => ({
       ...state,
       [key]: value,
-      // Clear any previous error when params change
+      // Clear any previous error and split export when params change
       error: null,
+      splitExportData: null,
+      splitInfo: null,
     })),
 
   setParams: (params) =>
@@ -79,6 +139,8 @@ export const useFrameStore = create<FrameState>((set) => ({
       ...state,
       ...params,
       error: null,
+      splitExportData: null,
+      splitInfo: null,
     })),
 
   setGenerating: (isGenerating) =>
@@ -96,6 +158,45 @@ export const useFrameStore = create<FrameState>((set) => ({
   setStlData: (stlData) =>
     set({ stlData }),
 
+  setThreemfData: (threemfData) =>
+    set({ threemfData }),
+
+  setBuildPlatePresetId: (buildPlatePresetId) =>
+    set({ buildPlatePresetId, splitExportData: null, splitInfo: null }),
+
+  setBuildPlateCustomWidth: (buildPlateCustomWidth) =>
+    set({ buildPlateCustomWidth, splitExportData: null, splitInfo: null }),
+
+  setBuildPlateCustomDepth: (buildPlateCustomDepth) =>
+    set({ buildPlateCustomDepth, splitExportData: null, splitInfo: null }),
+
+  setBuildPlateEnabled: (buildPlateEnabled) =>
+    set({ buildPlateEnabled }),
+
+  setConnectorType: (connectorType) =>
+    set({ connectorType, splitExportData: null, splitInfo: null }),
+
+  setDowelDiameter: (dowelDiameter) =>
+    set({ dowelDiameter, splitExportData: null, splitInfo: null }),
+
+  setDowelDepth: (dowelDepth) =>
+    set({ dowelDepth, splitExportData: null, splitInfo: null }),
+
+  setDowelCount: (dowelCount) =>
+    set({ dowelCount, splitExportData: null, splitInfo: null }),
+
+  setSplitExporting: (isSplitExporting) =>
+    set({ isSplitExporting }),
+
+  setSplitExportResult: (zipData, info) =>
+    set({ splitExportData: zipData, splitInfo: info, isSplitExporting: false }),
+
+  clearSplitExport: () =>
+    set({ splitExportData: null, splitInfo: null }),
+
+  setTriggerSplitExport: (fn) =>
+    set({ triggerSplitExport: fn }),
+
   resetToDefaults: () =>
     set({
       ...defaultParams,
@@ -105,6 +206,10 @@ export const useFrameStore = create<FrameState>((set) => ({
       error: null,
       meshData: null,
       stlData: null,
+      threemfData: null,
+      splitExportData: null,
+      splitInfo: null,
+      isSplitExporting: false,
     }),
 }));
 
@@ -121,5 +226,6 @@ export function selectFrameParams(state: FrameState): FrameParams {
     rabbetWidth: state.rabbetWidth,
     rabbetDepth: state.rabbetDepth,
     displayUnit: state.displayUnit,
+    customProfilePoints: state.customProfilePoints,
   };
 }

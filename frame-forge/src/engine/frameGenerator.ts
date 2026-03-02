@@ -1,7 +1,7 @@
 import type { Manifold, ManifoldToplevel, Mesh } from 'manifold-3d';
 import type { FrameParams, ComputedDimensions } from '../types/frame';
 import { getPictureSize } from '../data/presets';
-import { getProfile } from '../data/profiles';
+import { getProfileForParams } from '../data/profiles';
 import { buildProfileCrossSection } from './profileBuilder';
 import {
   buildFrameSegment,
@@ -37,7 +37,7 @@ function generateProfiledFrame(
   params: FrameParams,
   dims: ComputedDimensions
 ): { manifold: Manifold; mesh: Mesh; dimensions: ComputedDimensions } {
-  const profile = getProfile(params.profileId) || getProfile('flat')!;
+  const profile = getProfileForParams(params);
 
   // Build the 2D cross-section from profile data
   const crossSection = buildProfileCrossSection(

@@ -1,7 +1,9 @@
 import Module from 'manifold-3d';
 import type { ManifoldToplevel } from 'manifold-3d';
-import type { WorkerMessage, WorkerResponse, FrameParams } from '../types/frame';
+import type { WorkerMessage, WorkerResponse, FrameParams, ConnectorSettings, SplitExportResultMessage } from '../types/frame';
 import { generateFrame } from './frameGenerator';
+import { splitFrameForExport } from './frameSplitter';
+import { createZipArchive } from './zipWriter';
 
 let wasm: ManifoldToplevel | null = null;
 
@@ -25,6 +27,8 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
 
   if (message.type === 'generate') {
     await handleGenerate(message.params);
+  } else if (message.type === 'split-export') {
+    await handleSplitExport(message.params, message.buildPlate, message.connector);
   }
 };
 
@@ -75,11 +79,16 @@ async function handleGenerate(params: FrameParams): Promise<void> {
     // Compute normals from triangles
     computeNormals(positions, indices, normals);
 
-    sendProgress('Generating STL...', 85);
+    sendProgress('Generating STL...', 80);
 
     // Generate STL data
     // Manifold doesn't have direct STL export, so we'll create it manually
     const stlData = generateSTL(positions, indices, normals);
+
+    sendProgress('Generating 3MF...', 90);
+
+    // Generate 3MF data
+    const threemfData = generate3MFData(positions, indices);
 
     sendProgress('Complete', 100);
 
@@ -92,6 +101,7 @@ async function handleGenerate(params: FrameParams): Promise<void> {
         indices,
       },
       stlData,
+      threemfData,
     };
 
     // Use transferable objects for efficiency
@@ -101,6 +111,7 @@ async function handleGenerate(params: FrameParams): Promise<void> {
         normals.buffer,
         indices.buffer,
         stlData,
+        threemfData,
       ],
     });
 
@@ -276,6 +287,161 @@ function generateSTL(
   }
 
   return buffer;
+}
+
+/**
+ * Generate 3MF data from mesh positions and indices.
+ * 3MF is a ZIP containing XML files describing the model.
+ */
+function generate3MFData(
+  positions: Float32Array,
+  indices: Uint32Array
+): ArrayBuffer {
+  const numVerts = positions.length / 3;
+  const numTris = indices.length / 3;
+
+  // Build vertex XML
+  const vertexLines: string[] = [];
+  for (let i = 0; i < numVerts; i++) {
+    const x = positions[i * 3];
+    const y = positions[i * 3 + 1];
+    const z = positions[i * 3 + 2];
+    vertexLines.push(`            <vertex x="${x}" y="${y}" z="${z}" />`);
+  }
+
+  // Build triangle XML
+  const triangleLines: string[] = [];
+  for (let i = 0; i < numTris; i++) {
+    const v1 = indices[i * 3];
+    const v2 = indices[i * 3 + 1];
+    const v3 = indices[i * 3 + 2];
+    triangleLines.push(`            <triangle v1="${v1}" v2="${v2}" v3="${v3}" />`);
+  }
+
+  const modelXml = `<?xml version="1.0" encoding="UTF-8"?>
+<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
+  <resources>
+    <object id="1" type="model">
+      <mesh>
+        <vertices>
+${vertexLines.join('\n')}
+        </vertices>
+        <triangles>
+${triangleLines.join('\n')}
+        </triangles>
+      </mesh>
+    </object>
+  </resources>
+  <build>
+    <item objectid="1" />
+  </build>
+</model>`;
+
+  const contentTypesXml = `<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" />
+  <Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml" />
+</Types>`;
+
+  const relsXml = `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel" />
+</Relationships>`;
+
+  const encoder = new TextEncoder();
+
+  return createZipArchive([
+    { filename: '[Content_Types].xml', data: encoder.encode(contentTypesXml) },
+    { filename: '_rels/.rels', data: encoder.encode(relsXml) },
+    { filename: '3D/3dmodel.model', data: encoder.encode(modelXml) },
+  ]);
+}
+
+/**
+ * Handle split export: build individual sides, split oversized ones, package as ZIP.
+ */
+async function handleSplitExport(
+  params: FrameParams,
+  buildPlate: { width: number; depth: number },
+  connector: ConnectorSettings
+): Promise<void> {
+  try {
+    sendProgress('Initializing...', 5);
+    const manifold = await initWasm();
+
+    sendProgress('Splitting frame sides...', 20);
+    const { parts, splitInfo } = splitFrameForExport(
+      manifold,
+      params,
+      buildPlate.width,
+      buildPlate.depth,
+      connector
+    );
+
+    sendProgress('Generating STL files...', 50);
+    const zipEntries: { filename: string; data: Uint8Array }[] = [];
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const pct = 50 + Math.round((i / parts.length) * 30);
+      sendProgress(`Generating ${part.name}...`, pct);
+
+      const mesh = part.manifold.getMesh();
+      const numVerts = mesh.numVert;
+      const numTris = mesh.numTri;
+
+      const positions = new Float32Array(numVerts * 3);
+      const normals = new Float32Array(numVerts * 3);
+      const indices = new Uint32Array(numTris * 3);
+
+      for (let v = 0; v < numVerts; v++) {
+        const pos = mesh.position(v);
+        positions[v * 3] = pos[0];
+        positions[v * 3 + 1] = pos[1];
+        positions[v * 3 + 2] = pos[2];
+      }
+
+      for (let t = 0; t < numTris; t++) {
+        const verts = mesh.verts(t);
+        indices[t * 3] = verts[0];
+        indices[t * 3 + 1] = verts[1];
+        indices[t * 3 + 2] = verts[2];
+      }
+
+      computeNormals(positions, indices, normals);
+      const stlData = generateSTL(positions, indices, normals);
+      zipEntries.push({ filename: part.name, data: new Uint8Array(stlData) });
+
+      part.manifold.delete();
+    }
+
+    sendProgress('Creating ZIP archive...', 85);
+    const zipData = createZipArchive(zipEntries);
+
+    sendProgress('Complete', 100);
+
+    const response: SplitExportResultMessage = {
+      type: 'split-export-result',
+      zipData,
+      splitInfo: {
+        bottomSplit: splitInfo.bottom,
+        topSplit: splitInfo.top,
+        leftSplit: splitInfo.left,
+        rightSplit: splitInfo.right,
+        totalParts: splitInfo.totalParts,
+      },
+    };
+
+    self.postMessage(response, { transfer: [zipData] });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[Worker] Split export error:', errorMessage, error);
+    const response: WorkerResponse = {
+      type: 'error',
+      error: errorMessage,
+    };
+    self.postMessage(response);
+  }
 }
 
 /**

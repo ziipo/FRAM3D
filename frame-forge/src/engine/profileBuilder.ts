@@ -1,5 +1,5 @@
 import type { CrossSection, ManifoldToplevel, Vec2 } from 'manifold-3d';
-import type { FrameProfile } from '../types/frame';
+import type { FrameProfile, ProfilePoint } from '../types/frame';
 
 /**
  * Builds a 2D cross-section polygon from profile data, including a rabbet notch.
@@ -31,8 +31,11 @@ export function buildProfileCrossSection(
   // Extract only the top-surface points from the profile.
   const topPoints = extractTopSurface(profile.points);
 
+  // Tessellate Bezier curves into polyline segments
+  const tessellated = tessellateProfile(topPoints);
+
   // Scale normalized top-surface points to actual dimensions
-  const scaledTop: Vec2[] = topPoints.map((p) => [
+  const scaledTop: Vec2[] = tessellated.map((p) => [
     p.x * frameWidth,
     p.y * frameDepth,
   ]);
@@ -93,6 +96,57 @@ export function buildProfileCrossSection(
 }
 
 /**
+ * Returns true if a point has a non-zero Bezier handle.
+ */
+function hasHandle(p: ProfilePoint): boolean {
+  return (p.hx != null && p.hx !== 0) || (p.hy != null && p.hy !== 0);
+}
+
+/**
+ * Tessellates a sequence of ProfilePoints into a polyline,
+ * converting Bezier handle pairs into cubic curve subdivisions.
+ *
+ * For each consecutive pair P0→P1:
+ * - If neither has a handle: straight segment (just emit P1)
+ * - If either/both have handles: cubic Bezier with SUBDIVISIONS steps
+ *   cp1 = P0 + (hx, hy)       — out-handle of P0
+ *   cp2 = P1 + (-hx, -hy)     — in-handle of P1 (mirrored)
+ */
+const BEZIER_SUBDIVISIONS = 10;
+
+export function tessellateProfile(points: ProfilePoint[]): { x: number; y: number }[] {
+  if (points.length < 2) return points.map(p => ({ x: p.x, y: p.y }));
+
+  const result: { x: number; y: number }[] = [{ x: points[0].x, y: points[0].y }];
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+
+    if (!hasHandle(p0) && !hasHandle(p1)) {
+      // Straight segment
+      result.push({ x: p1.x, y: p1.y });
+    } else {
+      // Cubic Bezier
+      const cp1x = p0.x + (p0.hx ?? 0);
+      const cp1y = p0.y + (p0.hy ?? 0);
+      const cp2x = p1.x - (p1.hx ?? 0);
+      const cp2y = p1.y - (p1.hy ?? 0);
+
+      for (let s = 1; s <= BEZIER_SUBDIVISIONS; s++) {
+        const t = s / BEZIER_SUBDIVISIONS;
+        const mt = 1 - t;
+        const x = mt * mt * mt * p0.x + 3 * mt * mt * t * cp1x + 3 * mt * t * t * cp2x + t * t * t * p1.x;
+        const y = mt * mt * mt * p0.y + 3 * mt * mt * t * cp1y + 3 * mt * t * t * cp2y + t * t * t * p1.y;
+        result.push({ x, y });
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
  * Extracts the top-surface points from a profile's point array.
  *
  * Profile points define the full outline of the molding cross-section.
@@ -103,9 +157,9 @@ export function buildProfileCrossSection(
  * before hitting the bottom edge (y≈0). This skips the bottom/side closing points.
  */
 function extractTopSurface(
-  points: { x: number; y: number }[]
-): { x: number; y: number }[] {
-  const top: { x: number; y: number }[] = [];
+  points: ProfilePoint[]
+): ProfilePoint[] {
+  const top: ProfilePoint[] = [];
 
   for (const p of points) {
     // Stop when we hit the bottom edge (outer-bottom or inner-bottom)

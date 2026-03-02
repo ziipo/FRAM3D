@@ -2,6 +2,7 @@ import { DimensionControls } from '../controls/DimensionControls';
 import { FrameControls } from '../controls/FrameControls';
 import { ProfileSelector } from '../controls/ProfileSelector';
 import { RabbetControls } from '../controls/RabbetControls';
+import { BuildPlateControls } from '../controls/BuildPlateControls';
 import { ExportButton } from '../controls/ExportButton';
 
 export function Sidebar() {
@@ -21,6 +22,10 @@ export function Sidebar() {
         <div className="border-t border-neutral-700" />
 
         <RabbetControls />
+
+        <div className="border-t border-neutral-700" />
+
+        <BuildPlateControls />
 
         <div className="border-t border-neutral-700" />
 

@@ -18,6 +18,8 @@ export interface PictureSize {
 export interface ProfilePoint {
   x: number; // 0..1 normalized (0 = inner edge, 1 = outer edge)
   y: number; // 0..1 normalized (0 = bottom, 1 = top)
+  hx?: number; // handle offset X (relative to point, for the "out" direction)
+  hy?: number; // handle offset Y (symmetric: "in" handle is mirrored)
 }
 
 export interface FrameProfile {
@@ -46,12 +48,53 @@ export interface FrameParams {
 
   // Display
   displayUnit: Unit;
+
+  // Custom profile
+  customProfilePoints: ProfilePoint[];
+}
+
+// === Build Plate ===
+export interface BuildPlatePreset {
+  id: string;
+  label: string;
+  width: number;  // mm
+  depth: number;  // mm
+}
+
+// === Connectors ===
+export type ConnectorType = 'dowel';
+
+export interface DowelSettings {
+  diameter: number;  // mm (default 6)
+  depth: number;     // mm per side (default 10)
+  count: number;     // per cut face (default 2)
+}
+
+export interface ConnectorSettings {
+  type: ConnectorType;
+  dowel: DowelSettings;
+}
+
+// === Split Info ===
+export interface SplitInfo {
+  bottomSplit: boolean;
+  topSplit: boolean;
+  leftSplit: boolean;
+  rightSplit: boolean;
+  totalParts: number;
 }
 
 // === Worker Messages ===
 export interface GenerateMessage {
   type: 'generate';
   params: FrameParams;
+}
+
+export interface SplitExportMessage {
+  type: 'split-export';
+  params: FrameParams;
+  buildPlate: { width: number; depth: number };
+  connector: ConnectorSettings;
 }
 
 export interface ResultMessage {
@@ -62,6 +105,13 @@ export interface ResultMessage {
     indices: Uint32Array;
   };
   stlData: ArrayBuffer;
+  threemfData: ArrayBuffer;
+}
+
+export interface SplitExportResultMessage {
+  type: 'split-export-result';
+  zipData: ArrayBuffer;
+  splitInfo: SplitInfo;
 }
 
 export interface ErrorMessage {
@@ -75,8 +125,8 @@ export interface ProgressMessage {
   percent: number;
 }
 
-export type WorkerMessage = GenerateMessage;
-export type WorkerResponse = ResultMessage | ErrorMessage | ProgressMessage;
+export type WorkerMessage = GenerateMessage | SplitExportMessage;
+export type WorkerResponse = ResultMessage | SplitExportResultMessage | ErrorMessage | ProgressMessage;
 
 // === Computed Dimensions ===
 export interface ComputedDimensions {

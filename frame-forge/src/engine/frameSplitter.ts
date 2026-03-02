@@ -365,12 +365,17 @@ function applyTongueGroove(
   const tongueH = Math.min(safeZone.safeHeight * fillFraction, maxTongueSide);
 
   if (side === 'tongue') {
-    // Tongue protrudes past the cut in the positive split direction
+    // Tongue protrudes past the cut in the positive split direction.
+    // Overlap 1mm into the piece body so the union merges properly
+    // (coplanar faces without volume overlap can be discarded by Manifold).
+    const overlap = 1;
+    const totalLen = tongueLength + overlap;
     const tongueBox = createJoineryBox(
-      wasm, splitAxis, cutOffset, tongueLength / 2,
-      tongueLength, tongueW, tongueH,
+      wasm, splitAxis, cutOffset, totalLen / 2 - overlap,
+      totalLen, tongueW, tongueH,
       safeZone.perpCenter, safeZone.zCenter
     );
+
     const result = wasm.Manifold.union(piece, tongueBox);
     piece.delete();
     tongueBox.delete();
@@ -399,15 +404,20 @@ function applyTongueGroove(
 
     return result;
   } else {
-    // Groove: slightly larger than tongue to accept it with clearance
+    // Groove: slightly larger than tongue to accept it with clearance.
+    // Extend 1mm past cut face so the box overlaps the piece body
+    // (coplanar faces without volume overlap can be ignored by Manifold).
     const grooveW = tongueW + 2 * toleranceXY;
     const grooveH = tongueH + 2 * toleranceXY;
     const grooveLen = tongueLength + toleranceZ;
+    const overlap = 1;
+    const totalLen = grooveLen + overlap;
     const grooveBox = createJoineryBox(
-      wasm, splitAxis, cutOffset, grooveLen / 2,
-      grooveLen, grooveW, grooveH,
+      wasm, splitAxis, cutOffset, totalLen / 2 - overlap,
+      totalLen, grooveW, grooveH,
       safeZone.perpCenter, safeZone.zCenter
     );
+
     const result = wasm.Manifold.difference(piece, grooveBox);
     piece.delete();
     grooveBox.delete();
@@ -592,7 +602,9 @@ function processSide(
       if (j < pieceCount - 1) {
         piece = applyTongueGroove(
           wasm, piece, 'tongue', splitAxis, cutPositions[j],
-          safeZone, connector.tongueGroove
+          safeZone, connector.tongueGroove,
+          crossSection, shrunkSection, diagnosticSvgs,
+          `diagnostic-${sideName}-${j + 1}.svg`
         );
       }
 
@@ -600,7 +612,9 @@ function processSide(
       if (j > 0) {
         piece = applyTongueGroove(
           wasm, piece, 'groove', splitAxis, cutPositions[j - 1],
-          safeZone, connector.tongueGroove
+          safeZone, connector.tongueGroove,
+          null, null, diagnosticSvgs,
+          `diagnostic-${sideName}-${j}-low.svg`
         );
       }
     }

@@ -31,9 +31,16 @@ interface FrameState extends FrameParams {
 
   // Connector settings
   connectorType: ConnectorType;
-  dowelDiameter: number;
-  dowelDepth: number;
-  dowelCount: number;
+  floatingTenonLength: number;
+  floatingTenonWallThickness: number;
+  floatingTenonToleranceXY: number;
+  floatingTenonToleranceZ: number;
+  floatingTenonFillFraction: number;
+  tongueGrooveLength: number;
+  tongueGrooveWallThickness: number;
+  tongueGrooveToleranceXY: number;
+  tongueGrooveToleranceZ: number;
+  tongueGrooveFillFraction: number;
 
   // Split export state
   isSplitExporting: boolean;
@@ -57,9 +64,16 @@ interface FrameState extends FrameParams {
   setBuildPlateCustomDepth: (depth: number) => void;
   setBuildPlateEnabled: (enabled: boolean) => void;
   setConnectorType: (type: ConnectorType) => void;
-  setDowelDiameter: (diameter: number) => void;
-  setDowelDepth: (depth: number) => void;
-  setDowelCount: (count: number) => void;
+  setFloatingTenonLength: (v: number) => void;
+  setFloatingTenonWallThickness: (v: number) => void;
+  setFloatingTenonToleranceXY: (v: number) => void;
+  setFloatingTenonToleranceZ: (v: number) => void;
+  setFloatingTenonFillFraction: (v: number) => void;
+  setTongueGrooveLength: (v: number) => void;
+  setTongueGrooveWallThickness: (v: number) => void;
+  setTongueGrooveToleranceXY: (v: number) => void;
+  setTongueGrooveToleranceZ: (v: number) => void;
+  setTongueGrooveFillFraction: (v: number) => void;
   setSplitExporting: (exporting: boolean) => void;
   setSplitExportResult: (zipData: ArrayBuffer, info: SplitInfo) => void;
   clearSplitExport: () => void;
@@ -112,10 +126,17 @@ export const useFrameStore = create<FrameState>((set) => ({
   buildPlateEnabled: false,
 
   // Connector settings
-  connectorType: 'dowel' as ConnectorType,
-  dowelDiameter: 6,
-  dowelDepth: 10,
-  dowelCount: 2,
+  connectorType: 'floating-tenon' as ConnectorType,
+  floatingTenonLength: 15,
+  floatingTenonWallThickness: 2,
+  floatingTenonToleranceXY: 0.2,
+  floatingTenonToleranceZ: 0.5,
+  floatingTenonFillFraction: 0.8,
+  tongueGrooveLength: 10,
+  tongueGrooveWallThickness: 2,
+  tongueGrooveToleranceXY: 0.2,
+  tongueGrooveToleranceZ: 0.5,
+  tongueGrooveFillFraction: 0.8,
 
   // Split export state
   isSplitExporting: false,
@@ -176,14 +197,35 @@ export const useFrameStore = create<FrameState>((set) => ({
   setConnectorType: (connectorType) =>
     set({ connectorType, splitExportData: null, splitInfo: null }),
 
-  setDowelDiameter: (dowelDiameter) =>
-    set({ dowelDiameter, splitExportData: null, splitInfo: null }),
+  setFloatingTenonLength: (floatingTenonLength) =>
+    set({ floatingTenonLength, splitExportData: null, splitInfo: null }),
 
-  setDowelDepth: (dowelDepth) =>
-    set({ dowelDepth, splitExportData: null, splitInfo: null }),
+  setFloatingTenonWallThickness: (floatingTenonWallThickness) =>
+    set({ floatingTenonWallThickness, splitExportData: null, splitInfo: null }),
 
-  setDowelCount: (dowelCount) =>
-    set({ dowelCount, splitExportData: null, splitInfo: null }),
+  setFloatingTenonToleranceXY: (floatingTenonToleranceXY) =>
+    set({ floatingTenonToleranceXY, splitExportData: null, splitInfo: null }),
+
+  setFloatingTenonToleranceZ: (floatingTenonToleranceZ) =>
+    set({ floatingTenonToleranceZ, splitExportData: null, splitInfo: null }),
+
+  setFloatingTenonFillFraction: (floatingTenonFillFraction) =>
+    set({ floatingTenonFillFraction, splitExportData: null, splitInfo: null }),
+
+  setTongueGrooveLength: (tongueGrooveLength) =>
+    set({ tongueGrooveLength, splitExportData: null, splitInfo: null }),
+
+  setTongueGrooveWallThickness: (tongueGrooveWallThickness) =>
+    set({ tongueGrooveWallThickness, splitExportData: null, splitInfo: null }),
+
+  setTongueGrooveToleranceXY: (tongueGrooveToleranceXY) =>
+    set({ tongueGrooveToleranceXY, splitExportData: null, splitInfo: null }),
+
+  setTongueGrooveToleranceZ: (tongueGrooveToleranceZ) =>
+    set({ tongueGrooveToleranceZ, splitExportData: null, splitInfo: null }),
+
+  setTongueGrooveFillFraction: (tongueGrooveFillFraction) =>
+    set({ tongueGrooveFillFraction, splitExportData: null, splitInfo: null }),
 
   setSplitExporting: (isSplitExporting) =>
     set({ isSplitExporting }),
@@ -212,6 +254,10 @@ export const useFrameStore = create<FrameState>((set) => ({
       isSplitExporting: false,
     }),
 }));
+
+// DEBUG: expose store for console access
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).__frameStore = useFrameStore;
 
 // Selector for getting all params as a FrameParams object
 export function selectFrameParams(state: FrameState): FrameParams {

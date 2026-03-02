@@ -1,22 +1,45 @@
 import { useFrameStore } from '../../store/useFrameStore';
 import { buildPlatePresets, getBuildPlatePreset } from '../../data/buildPlates';
+import type { ConnectorType } from '../../types/frame';
 
 export function BuildPlateControls() {
   const enabled = useFrameStore((s) => s.buildPlateEnabled);
   const presetId = useFrameStore((s) => s.buildPlatePresetId);
   const customWidth = useFrameStore((s) => s.buildPlateCustomWidth);
   const customDepth = useFrameStore((s) => s.buildPlateCustomDepth);
-  const dowelDiameter = useFrameStore((s) => s.dowelDiameter);
-  const dowelDepth = useFrameStore((s) => s.dowelDepth);
-  const dowelCount = useFrameStore((s) => s.dowelCount);
+  const connectorType = useFrameStore((s) => s.connectorType);
+
+  // Floating tenon
+  const ftLength = useFrameStore((s) => s.floatingTenonLength);
+  const ftWall = useFrameStore((s) => s.floatingTenonWallThickness);
+  const ftTolXY = useFrameStore((s) => s.floatingTenonToleranceXY);
+  const ftTolZ = useFrameStore((s) => s.floatingTenonToleranceZ);
+  const ftFill = useFrameStore((s) => s.floatingTenonFillFraction);
+
+  // Tongue & groove
+  const tgLength = useFrameStore((s) => s.tongueGrooveLength);
+  const tgWall = useFrameStore((s) => s.tongueGrooveWallThickness);
+  const tgTolXY = useFrameStore((s) => s.tongueGrooveToleranceXY);
+  const tgTolZ = useFrameStore((s) => s.tongueGrooveToleranceZ);
+  const tgFill = useFrameStore((s) => s.tongueGrooveFillFraction);
 
   const setEnabled = useFrameStore((s) => s.setBuildPlateEnabled);
   const setPresetId = useFrameStore((s) => s.setBuildPlatePresetId);
   const setCustomWidth = useFrameStore((s) => s.setBuildPlateCustomWidth);
   const setCustomDepth = useFrameStore((s) => s.setBuildPlateCustomDepth);
-  const setDowelDiameter = useFrameStore((s) => s.setDowelDiameter);
-  const setDowelDepth = useFrameStore((s) => s.setDowelDepth);
-  const setDowelCount = useFrameStore((s) => s.setDowelCount);
+  const setConnectorType = useFrameStore((s) => s.setConnectorType);
+
+  const setFtLength = useFrameStore((s) => s.setFloatingTenonLength);
+  const setFtWall = useFrameStore((s) => s.setFloatingTenonWallThickness);
+  const setFtTolXY = useFrameStore((s) => s.setFloatingTenonToleranceXY);
+  const setFtTolZ = useFrameStore((s) => s.setFloatingTenonToleranceZ);
+  const setFtFill = useFrameStore((s) => s.setFloatingTenonFillFraction);
+
+  const setTgLength = useFrameStore((s) => s.setTongueGrooveLength);
+  const setTgWall = useFrameStore((s) => s.setTongueGrooveWallThickness);
+  const setTgTolXY = useFrameStore((s) => s.setTongueGrooveToleranceXY);
+  const setTgTolZ = useFrameStore((s) => s.setTongueGrooveToleranceZ);
+  const setTgFill = useFrameStore((s) => s.setTongueGrooveFillFraction);
 
   const preset = getBuildPlatePreset(presetId);
   const effectiveWidth = presetId === 'custom' ? customWidth : (preset?.width ?? 220);
@@ -45,7 +68,7 @@ export function BuildPlateControls() {
       {enabled && (
         <>
           <p className="text-xs text-neutral-500">
-            Split oversized sides to fit your printer. Pieces get dowel holes for alignment.
+            Split oversized sides to fit your printer.
           </p>
 
           {/* Printer Preset */}
@@ -95,57 +118,190 @@ export function BuildPlateControls() {
             Plate: {effectiveWidth} × {effectiveDepth} mm
           </div>
 
-          {/* Dowel settings */}
+          {/* Joinery method */}
           <div className="space-y-3 pt-2 border-t border-neutral-700">
-            <label className="text-xs text-neutral-400 block">Dowel Connectors</label>
-
             <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-neutral-400">Diameter</span>
-                <span className="text-neutral-300">{dowelDiameter} mm</span>
-              </div>
-              <input
-                type="range"
-                value={dowelDiameter}
-                onChange={(e) => setDowelDiameter(parseFloat(e.target.value))}
-                min={3}
-                max={10}
-                step={0.5}
-                className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              />
+              <label className="text-xs text-neutral-400 block mb-1">Joinery Method</label>
+              <select
+                value={connectorType}
+                onChange={(e) => setConnectorType(e.target.value as ConnectorType)}
+                className="w-full bg-neutral-700 text-neutral-200 text-sm rounded px-2 py-1.5 border border-neutral-600 focus:border-blue-500 focus:outline-none"
+              >
+                <option value="none">None (flat butt joint)</option>
+                <option value="floating-tenon">Floating Tenon (Biscuit)</option>
+                <option value="tongue-groove">Tongue &amp; Groove</option>
+              </select>
             </div>
 
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-neutral-400">Depth per side</span>
-                <span className="text-neutral-300">{dowelDepth} mm</span>
-              </div>
-              <input
-                type="range"
-                value={dowelDepth}
-                onChange={(e) => setDowelDepth(parseFloat(e.target.value))}
-                min={5}
-                max={20}
-                step={1}
-                className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              />
-            </div>
+            {/* Floating Tenon settings */}
+            {connectorType === 'floating-tenon' && (
+              <>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Tenon Length</span>
+                    <span className="text-neutral-300">{ftLength} mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={ftLength}
+                    onChange={(e) => setFtLength(parseFloat(e.target.value))}
+                    min={8}
+                    max={25}
+                    step={1}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
 
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-neutral-400">Count per joint</span>
-                <span className="text-neutral-300">{dowelCount}</span>
-              </div>
-              <input
-                type="range"
-                value={dowelCount}
-                onChange={(e) => setDowelCount(parseInt(e.target.value))}
-                min={1}
-                max={4}
-                step={1}
-                className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              />
-            </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Wall Thickness</span>
+                    <span className="text-neutral-300">{ftWall} mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={ftWall}
+                    onChange={(e) => setFtWall(parseFloat(e.target.value))}
+                    min={1}
+                    max={4}
+                    step={0.5}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Tolerance XY</span>
+                    <span className="text-neutral-300">{ftTolXY} mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={ftTolXY}
+                    onChange={(e) => setFtTolXY(parseFloat(e.target.value))}
+                    min={0.1}
+                    max={0.5}
+                    step={0.05}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Tolerance Z</span>
+                    <span className="text-neutral-300">{ftTolZ} mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={ftTolZ}
+                    onChange={(e) => setFtTolZ(parseFloat(e.target.value))}
+                    min={0.2}
+                    max={1.0}
+                    step={0.1}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Fill %</span>
+                    <span className="text-neutral-300">{Math.round(ftFill * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={ftFill}
+                    onChange={(e) => setFtFill(parseFloat(e.target.value))}
+                    min={0.5}
+                    max={0.95}
+                    step={0.05}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Tongue & Groove settings */}
+            {connectorType === 'tongue-groove' && (
+              <>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Tongue Length</span>
+                    <span className="text-neutral-300">{tgLength} mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={tgLength}
+                    onChange={(e) => setTgLength(parseFloat(e.target.value))}
+                    min={5}
+                    max={20}
+                    step={1}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Wall Thickness</span>
+                    <span className="text-neutral-300">{tgWall} mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={tgWall}
+                    onChange={(e) => setTgWall(parseFloat(e.target.value))}
+                    min={1}
+                    max={4}
+                    step={0.5}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Tolerance XY</span>
+                    <span className="text-neutral-300">{tgTolXY} mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={tgTolXY}
+                    onChange={(e) => setTgTolXY(parseFloat(e.target.value))}
+                    min={0.1}
+                    max={0.5}
+                    step={0.05}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Tolerance Z</span>
+                    <span className="text-neutral-300">{tgTolZ} mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={tgTolZ}
+                    onChange={(e) => setTgTolZ(parseFloat(e.target.value))}
+                    min={0.2}
+                    max={1.0}
+                    step={0.1}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Fill %</span>
+                    <span className="text-neutral-300">{Math.round(tgFill * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    value={tgFill}
+                    onChange={(e) => setTgFill(parseFloat(e.target.value))}
+                    min={0.5}
+                    max={0.95}
+                    step={0.05}
+                    className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </>
       )}

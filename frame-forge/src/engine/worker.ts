@@ -370,7 +370,7 @@ async function handleSplitExport(
     const manifold = await initWasm();
 
     sendProgress('Splitting frame sides...', 20);
-    const { parts, splitInfo } = splitFrameForExport(
+    const { parts, splitInfo, diagnosticSvgs } = splitFrameForExport(
       manifold,
       params,
       buildPlate.width,
@@ -415,6 +415,12 @@ async function handleSplitExport(
       part.manifold.delete();
     }
 
+    // Add diagnostic SVGs to debug/ subfolder in ZIP
+    const encoder = new TextEncoder();
+    for (const diag of diagnosticSvgs) {
+      zipEntries.push({ filename: `debug/${diag.name}`, data: encoder.encode(diag.svg) });
+    }
+
     sendProgress('Creating ZIP archive...', 85);
     const zipData = createZipArchive(zipEntries);
 
@@ -430,6 +436,7 @@ async function handleSplitExport(
         rightPieces: splitInfo.right,
         totalParts: splitInfo.totalParts,
       },
+      diagnosticSvgs: diagnosticSvgs.length > 0 ? diagnosticSvgs : undefined,
     };
 
     self.postMessage(response, { transfer: [zipData] });

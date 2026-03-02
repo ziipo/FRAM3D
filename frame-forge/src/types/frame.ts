@@ -62,17 +62,28 @@ export interface BuildPlatePreset {
 }
 
 // === Connectors ===
-export type ConnectorType = 'dowel';
+export type ConnectorType = 'none' | 'floating-tenon' | 'tongue-groove';
 
-export interface DowelSettings {
-  diameter: number;  // mm (default 6)
-  depth: number;     // mm per side (default 10)
-  count: number;     // per cut face (default 2)
+export interface FloatingTenonSettings {
+  tenonLength: number;    // total length of loose insert (default 15)
+  wallThickness: number;  // min wall around mortise (default 2)
+  toleranceXY: number;    // XY clearance for sliding fit (default 0.2)
+  toleranceZ: number;     // extra depth for glue pocket (default 0.5)
+  fillFraction: number;   // fraction of safe zone to fill (default 0.8)
+}
+
+export interface TongueGrooveSettings {
+  tongueLength: number;   // how far tongue protrudes past cut (default 10)
+  wallThickness: number;  // min wall around joint (default 2)
+  toleranceXY: number;    // XY clearance (default 0.2)
+  toleranceZ: number;     // extra depth for groove (default 0.5)
+  fillFraction: number;   // fraction of safe zone (default 0.8)
 }
 
 export interface ConnectorSettings {
   type: ConnectorType;
-  dowel: DowelSettings;
+  floatingTenon: FloatingTenonSettings;
+  tongueGroove: TongueGrooveSettings;
 }
 
 // === Split Info ===
@@ -112,6 +123,7 @@ export interface SplitExportResultMessage {
   type: 'split-export-result';
   zipData: ArrayBuffer;
   splitInfo: SplitInfo;
+  diagnosticSvgs?: Array<{ name: string; svg: string }>;
 }
 
 export interface ErrorMessage {

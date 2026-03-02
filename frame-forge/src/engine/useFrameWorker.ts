@@ -44,6 +44,10 @@ export function useFrameWorker() {
 
         case 'split-export-result':
           setSplitExportResult(response.zipData, response.splitInfo);
+          if (response.diagnosticSvgs && response.diagnosticSvgs.length > 0) {
+            console.log(`[FrameForge] ${response.diagnosticSvgs.length} diagnostic SVG(s) generated`);
+            (globalThis as Record<string, unknown>).__diagnosticSvgs = response.diagnosticSvgs;
+          }
           break;
 
         case 'progress':
@@ -106,10 +110,19 @@ export function useFrameWorker() {
       buildPlate: { width: plateWidth, depth: plateDepth },
       connector: {
         type: state.connectorType,
-        dowel: {
-          diameter: state.dowelDiameter,
-          depth: state.dowelDepth,
-          count: state.dowelCount,
+        floatingTenon: {
+          tenonLength: state.floatingTenonLength,
+          wallThickness: state.floatingTenonWallThickness,
+          toleranceXY: state.floatingTenonToleranceXY,
+          toleranceZ: state.floatingTenonToleranceZ,
+          fillFraction: state.floatingTenonFillFraction,
+        },
+        tongueGroove: {
+          tongueLength: state.tongueGrooveLength,
+          wallThickness: state.tongueGrooveWallThickness,
+          toleranceXY: state.tongueGrooveToleranceXY,
+          toleranceZ: state.tongueGrooveToleranceZ,
+          fillFraction: state.tongueGrooveFillFraction,
         },
       },
     };

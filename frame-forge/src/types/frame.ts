@@ -107,6 +107,8 @@ export interface SplitInfo {
 export interface GenerateMessage {
   type: 'generate';
   params: FrameParams;
+  buildPlate?: { width: number; depth: number };
+  connector?: ConnectorSettings;
 }
 
 export interface SplitExportMessage {
@@ -123,6 +125,13 @@ export interface ResultMessage {
     normals: Float32Array;
     indices: Uint32Array;
   };
+  splitParts?: Array<{
+    name: string;
+    positions: Float32Array;
+    normals: Float32Array;
+    indices: Uint32Array;
+    worldPos?: [number, number, number];
+  }>;
   stlData: ArrayBuffer;
   threemfData: ArrayBuffer;
 }

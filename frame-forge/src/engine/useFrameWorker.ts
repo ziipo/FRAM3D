@@ -16,10 +16,29 @@ export function useFrameWorker() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const params = useFrameStore(useShallow(selectFrameParams));
+  
+  // Build plate settings (for triggering regeneration)
+  const buildPlateEnabled = useFrameStore((s) => s.buildPlateEnabled);
+  const buildPlatePresetId = useFrameStore((s) => s.buildPlatePresetId);
+  const buildPlateCustomWidth = useFrameStore((s) => s.buildPlateCustomWidth);
+  const buildPlateCustomDepth = useFrameStore((s) => s.buildPlateCustomDepth);
+  const connectorType = useFrameStore((s) => s.connectorType);
+  const ftLength = useFrameStore((s) => s.floatingTenonLength);
+  const ftWall = useFrameStore((s) => s.floatingTenonWallThickness);
+  const ftTolXY = useFrameStore((s) => s.floatingTenonToleranceXY);
+  const ftTolZ = useFrameStore((s) => s.floatingTenonToleranceZ);
+  const ftFill = useFrameStore((s) => s.floatingTenonFillFraction);
+  const tgLength = useFrameStore((s) => s.tongueGrooveLength);
+  const tgWall = useFrameStore((s) => s.tongueGrooveWallThickness);
+  const tgTolXY = useFrameStore((s) => s.tongueGrooveToleranceXY);
+  const tgTolZ = useFrameStore((s) => s.tongueGrooveToleranceZ);
+  const tgFill = useFrameStore((s) => s.tongueGrooveFillFraction);
+
   const setGenerating = useFrameStore((s) => s.setGenerating);
   const setProgress = useFrameStore((s) => s.setProgress);
   const setError = useFrameStore((s) => s.setError);
   const setMeshData = useFrameStore((s) => s.setMeshData);
+  const setSplitParts = useFrameStore((s) => s.setSplitParts);
   const setStlData = useFrameStore((s) => s.setStlData);
   const setThreemfData = useFrameStore((s) => s.setThreemfData);
   const setSplitExporting = useFrameStore((s) => s.setSplitExporting);
@@ -37,6 +56,7 @@ export function useFrameWorker() {
       switch (response.type) {
         case 'result':
           setMeshData(response.mesh);
+          setSplitParts(response.splitParts || null);
           setStlData(response.stlData);
           setThreemfData(response.threemfData);
           setGenerating(false);
@@ -70,7 +90,7 @@ export function useFrameWorker() {
       worker.terminate();
       workerRef.current = null;
     };
-  }, [setGenerating, setProgress, setError, setMeshData, setStlData, setThreemfData, setSplitExporting, setSplitExportResult]);
+  }, [setGenerating, setProgress, setError, setMeshData, setSplitParts, setStlData, setThreemfData, setSplitExporting, setSplitExportResult]);
 
   // Generate function
   const generate = useCallback(() => {
@@ -79,13 +99,47 @@ export function useFrameWorker() {
     setGenerating(true);
     setError(null);
 
+    const state = useFrameStore.getState();
+    const preset = getBuildPlatePreset(state.buildPlatePresetId);
+
+    const plateWidth = state.buildPlatePresetId === 'custom'
+      ? state.buildPlateCustomWidth
+      : preset?.width ?? 220;
+    const plateDepth = state.buildPlatePresetId === 'custom'
+      ? state.buildPlateCustomDepth
+      : preset?.depth ?? 220;
+
     const message: GenerateMessage = {
       type: 'generate',
       params,
+      buildPlate: state.buildPlateEnabled ? { width: plateWidth, depth: plateDepth } : undefined,
+      connector: state.buildPlateEnabled ? {
+        type: state.connectorType,
+        floatingTenon: {
+          tenonLength: state.floatingTenonLength,
+          wallThickness: state.floatingTenonWallThickness,
+          toleranceXY: state.floatingTenonToleranceXY,
+          toleranceZ: state.floatingTenonToleranceZ,
+          fillFraction: state.floatingTenonFillFraction,
+        },
+        tongueGroove: {
+          tongueLength: state.tongueGrooveLength,
+          wallThickness: state.tongueGrooveWallThickness,
+          toleranceXY: state.tongueGrooveToleranceXY,
+          toleranceZ: state.tongueGrooveToleranceZ,
+          fillFraction: state.tongueGrooveFillFraction,
+        },
+      } : undefined,
     };
 
     workerRef.current.postMessage(message);
-  }, [params, setGenerating, setError]);
+  }, [
+    params, 
+    buildPlateEnabled, buildPlatePresetId, buildPlateCustomWidth, buildPlateCustomDepth,
+    connectorType, ftLength, ftWall, ftTolXY, ftTolZ, ftFill,
+    tgLength, tgWall, tgTolXY, tgTolZ, tgFill,
+    setGenerating, setError
+  ]);
 
   // Split export function
   const splitExport = useCallback(() => {
@@ -128,7 +182,13 @@ export function useFrameWorker() {
     };
 
     workerRef.current.postMessage(message);
-  }, [params, setSplitExporting, setError]);
+  }, [
+    params, 
+    buildPlatePresetId, buildPlateCustomWidth, buildPlateCustomDepth,
+    connectorType, ftLength, ftWall, ftTolXY, ftTolZ, ftFill,
+    tgLength, tgWall, tgTolXY, tgTolZ, tgFill,
+    setSplitExporting, setError
+  ]);
 
   // Register splitExport in the store so ExportButton can call it
   useEffect(() => {

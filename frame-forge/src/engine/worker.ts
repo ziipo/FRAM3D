@@ -1,6 +1,6 @@
 import Module from 'manifold-3d';
 import type { ManifoldToplevel } from 'manifold-3d';
-import type { WorkerMessage, WorkerResponse, FrameParams, ConnectorSettings, SplitExportResultMessage } from '../types/frame';
+import type { WorkerMessage, WorkerResponse, FrameParams, ConnectorSettings, SplitExportResultMessage, ResultMessage } from '../types/frame';
 import { generateFrame } from './frameGenerator';
 import { splitFrameForExport } from './frameSplitter';
 import { createZipArchive } from './zipWriter';
@@ -26,7 +26,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const message = event.data;
 
   if (message.type === 'generate') {
-    await handleGenerate(message.params);
+    await handleGenerate(message.params, message.buildPlate, message.connector);
   } else if (message.type === 'split-export') {
     await handleSplitExport(message.params, message.buildPlate, message.connector);
   }
@@ -35,19 +35,74 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
 /**
  * Generate frame geometry and send results back.
  */
-async function handleGenerate(params: FrameParams): Promise<void> {
+async function handleGenerate(
+  params: FrameParams,
+  buildPlate?: { width: number; depth: number },
+  connector?: ConnectorSettings
+): Promise<void> {
   try {
     // Send progress update
     sendProgress('Initializing...', 10);
 
     // Initialize WASM if needed
-    const manifold = await initWasm();
+    const manifoldModule = await initWasm();
 
     sendProgress('Generating geometry...', 30);
 
     // Generate the frame
-    const result = generateFrame(manifold, params);
+    const result = generateFrame(manifoldModule, params);
     const { manifold: frame, mesh, dimensions } = result;
+
+    // Handle split parts if build plate is enabled
+    let splitPartsData: ResultMessage['splitParts'] = undefined;
+    const transferList: ArrayBuffer[] = [];
+
+    if (buildPlate && connector) {
+      sendProgress('Generating split parts for preview...', 50);
+      const splitResult = splitFrameForExport(
+        manifoldModule,
+        params,
+        buildPlate.width,
+        buildPlate.depth,
+        connector
+      );
+      
+      splitPartsData = splitResult.parts.map(part => {
+        const m = part.manifold.getMesh();
+        const positions = new Float32Array(m.numVert * 3);
+        const normals = new Float32Array(m.numVert * 3);
+        const indices = new Uint32Array(m.numTri * 3);
+
+        for (let i = 0; i < m.numVert; i++) {
+          const pos = m.position(i);
+          positions[i * 3] = pos[0];
+          positions[i * 3 + 1] = pos[1];
+          positions[i * 3 + 2] = pos[2];
+        }
+
+        for (let i = 0; i < m.numTri; i++) {
+          const v = m.verts(i);
+          indices[i * 3] = v[0];
+          indices[i * 3 + 1] = v[1];
+          indices[i * 3 + 2] = v[2];
+        }
+
+        computeNormals(positions, indices, normals);
+        
+        transferList.push(positions.buffer, normals.buffer, indices.buffer);
+        
+        // Clean up part manifold
+        part.manifold.delete();
+        
+        return {
+          name: part.name,
+          positions,
+          normals,
+          indices,
+          worldPos: part.worldPos
+        };
+      });
+    }
 
     sendProgress('Preparing mesh data...', 70);
 
@@ -82,7 +137,6 @@ async function handleGenerate(params: FrameParams): Promise<void> {
     sendProgress('Generating STL...', 80);
 
     // Generate STL data
-    // Manifold doesn't have direct STL export, so we'll create it manually
     const stlData = generateSTL(positions, indices, normals);
 
     sendProgress('Generating 3MF...', 90);
@@ -93,26 +147,29 @@ async function handleGenerate(params: FrameParams): Promise<void> {
     sendProgress('Complete', 100);
 
     // Send result back to main thread
-    const response: WorkerResponse = {
+    const response: ResultMessage = {
       type: 'result',
       mesh: {
         positions,
         normals,
         indices,
       },
+      splitParts: splitPartsData,
       stlData,
       threemfData,
     };
 
     // Use transferable objects for efficiency
+    transferList.push(
+      positions.buffer,
+      normals.buffer,
+      indices.buffer,
+      stlData,
+      threemfData
+    );
+
     self.postMessage(response, {
-      transfer: [
-        positions.buffer,
-        normals.buffer,
-        indices.buffer,
-        stlData,
-        threemfData,
-      ],
+      transfer: transferList,
     });
 
     // Clean up WASM objects
@@ -208,36 +265,23 @@ function generateSTL(
 ): ArrayBuffer {
   const numTris = indices.length / 3;
 
-  // STL binary format:
-  // 80 bytes header
-  // 4 bytes triangle count (uint32)
-  // For each triangle:
-  //   12 bytes normal (3 x float32)
-  //   36 bytes vertices (3 x 3 x float32)
-  //   2 bytes attribute (uint16, usually 0)
-  // Total: 80 + 4 + numTris * 50 bytes
-
   const bufferSize = 80 + 4 + numTris * 50;
   const buffer = new ArrayBuffer(bufferSize);
   const view = new DataView(buffer);
 
-  // Write header (80 bytes, can be anything)
   const header = 'Generated by FrameForge';
   for (let i = 0; i < 80; i++) {
     view.setUint8(i, i < header.length ? header.charCodeAt(i) : 0);
   }
 
-  // Write triangle count
   view.setUint32(80, numTris, true);
 
-  // Write triangles
   let offset = 84;
   for (let i = 0; i < numTris; i++) {
     const i0 = indices[i * 3];
     const i1 = indices[i * 3 + 1];
     const i2 = indices[i * 3 + 2];
 
-    // Compute face normal
     const v0 = [
       positions[i0 * 3],
       positions[i0 * 3 + 1],
@@ -267,13 +311,11 @@ function generateSTL(
       nz /= len;
     }
 
-    // Write normal
     view.setFloat32(offset, nx, true);
     view.setFloat32(offset + 4, ny, true);
     view.setFloat32(offset + 8, nz, true);
     offset += 12;
 
-    // Write vertices
     for (const idx of [i0, i1, i2]) {
       view.setFloat32(offset, positions[idx * 3], true);
       view.setFloat32(offset + 4, positions[idx * 3 + 1], true);
@@ -281,7 +323,6 @@ function generateSTL(
       offset += 12;
     }
 
-    // Write attribute byte count (0)
     view.setUint16(offset, 0, true);
     offset += 2;
   }
@@ -291,7 +332,6 @@ function generateSTL(
 
 /**
  * Generate 3MF data from mesh positions and indices.
- * 3MF is a ZIP containing XML files describing the model.
  */
 function generate3MFData(
   positions: Float32Array,
@@ -300,7 +340,6 @@ function generate3MFData(
   const numVerts = positions.length / 3;
   const numTris = indices.length / 3;
 
-  // Build vertex XML
   const vertexLines: string[] = [];
   for (let i = 0; i < numVerts; i++) {
     const x = positions[i * 3];
@@ -309,7 +348,6 @@ function generate3MFData(
     vertexLines.push(`            <vertex x="${x}" y="${y}" z="${z}" />`);
   }
 
-  // Build triangle XML
   const triangleLines: string[] = [];
   for (let i = 0; i < numTris; i++) {
     const v1 = indices[i * 3];
@@ -367,11 +405,11 @@ async function handleSplitExport(
 ): Promise<void> {
   try {
     sendProgress('Initializing...', 5);
-    const manifold = await initWasm();
+    const manifoldModule = await initWasm();
 
     sendProgress('Splitting frame sides...', 20);
     const { parts, splitInfo, diagnosticSvgs } = splitFrameForExport(
-      manifold,
+      manifoldModule,
       params,
       buildPlate.width,
       buildPlate.depth,
@@ -415,7 +453,6 @@ async function handleSplitExport(
       part.manifold.delete();
     }
 
-    // Add diagnostic SVGs to debug/ subfolder in ZIP
     const encoder = new TextEncoder();
     for (const diag of diagnosticSvgs) {
       zipEntries.push({ filename: `debug/${diag.name}`, data: encoder.encode(diag.svg) });

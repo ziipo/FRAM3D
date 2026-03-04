@@ -41,6 +41,9 @@ export function BuildPlateControls() {
   const setTgTolZ = useFrameStore((s) => s.setTongueGrooveToleranceZ);
   const setTgFill = useFrameStore((s) => s.setTongueGrooveFillFraction);
 
+  const explosionGap = useFrameStore((s) => s.explosionGap);
+  const setExplosionGap = useFrameStore((s) => s.setExplosionGap);
+
   const preset = getBuildPlatePreset(presetId);
   const effectiveWidth = presetId === 'custom' ? customWidth : (preset?.width ?? 220);
   const effectiveDepth = presetId === 'custom' ? customDepth : (preset?.depth ?? 220);
@@ -116,6 +119,23 @@ export function BuildPlateControls() {
           {/* Effective size display */}
           <div className="text-xs text-neutral-500">
             Plate: {effectiveWidth} × {effectiveDepth} mm
+          </div>
+
+          {/* Explosion Gap */}
+          <div className="pt-2 border-t border-neutral-700">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-neutral-400">Preview Explosion</span>
+              <span className="text-neutral-300">{explosionGap} mm</span>
+            </div>
+            <input
+              type="range"
+              value={explosionGap}
+              onChange={(e) => setExplosionGap(parseFloat(e.target.value))}
+              min={0}
+              max={50}
+              step={1}
+              className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
           </div>
 
           {/* Joinery method */}

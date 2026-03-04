@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { FrameParams, Unit, ProfilePoint, ConnectorType, SplitInfo } from '../types/frame';
+import type { FrameParams, Unit, ProfilePoint, ConnectorType, SplitInfo, ConnectorSettings } from '../types/frame';
 import { defaultPictureSizeId } from '../data/presets';
 import { defaultProfileId } from '../data/profiles';
 
@@ -16,6 +16,14 @@ interface FrameState extends FrameParams {
     normals: Float32Array;
     indices: Uint32Array;
   } | null;
+
+  // Split parts data
+  splitParts: Array<{
+    name: string;
+    positions: Float32Array;
+    normals: Float32Array;
+    indices: Uint32Array;
+  }> | null;
 
   // STL data (for export)
   stlData: ArrayBuffer | null;
@@ -52,6 +60,7 @@ interface FrameState extends FrameParams {
 
   // View reset state
   resetView: number;
+  explosionGap: number;
 
   // Actions
   setParam: <K extends keyof FrameParams>(key: K, value: FrameParams[K]) => void;
@@ -60,12 +69,14 @@ interface FrameState extends FrameParams {
   setProgress: (percent: number, stage: string) => void;
   setError: (error: string | null) => void;
   setMeshData: (data: FrameState['meshData']) => void;
+  setSplitParts: (data: FrameState['splitParts']) => void;
   setStlData: (data: ArrayBuffer | null) => void;
   setThreemfData: (data: ArrayBuffer | null) => void;
   setBuildPlatePresetId: (id: string) => void;
   setBuildPlateCustomWidth: (width: number) => void;
   setBuildPlateCustomDepth: (depth: number) => void;
   setBuildPlateEnabled: (enabled: boolean) => void;
+  setExplosionGap: (v: number) => void;
   setConnectorType: (type: ConnectorType) => void;
   setFloatingTenonLength: (v: number) => void;
   setFloatingTenonWallThickness: (v: number) => void;
@@ -127,6 +138,7 @@ export const useFrameStore = create<FrameState>((set) => ({
 
   // Generated data
   meshData: null,
+  splitParts: null,
   stlData: null,
   threemfData: null,
 
@@ -157,6 +169,7 @@ export const useFrameStore = create<FrameState>((set) => ({
 
   // View reset state
   resetView: 0,
+  explosionGap: 0,
 
   // Actions
   setParam: (key, value) =>
@@ -190,6 +203,9 @@ export const useFrameStore = create<FrameState>((set) => ({
   setMeshData: (meshData) =>
     set({ meshData, isGenerating: false }),
 
+  setSplitParts: (splitParts) =>
+    set({ splitParts }),
+
   setStlData: (stlData) =>
     set({ stlData }),
 
@@ -207,6 +223,9 @@ export const useFrameStore = create<FrameState>((set) => ({
 
   setBuildPlateEnabled: (buildPlateEnabled) =>
     set({ buildPlateEnabled }),
+
+  setExplosionGap: (explosionGap) =>
+    set({ explosionGap }),
 
   setConnectorType: (connectorType) =>
     set({ connectorType, splitExportData: null, splitInfo: null }),
@@ -264,12 +283,14 @@ export const useFrameStore = create<FrameState>((set) => ({
       progressStage: '',
       error: null,
       meshData: null,
+      splitParts: null,
       stlData: null,
       threemfData: null,
       splitExportData: null,
       splitInfo: null,
       isSplitExporting: false,
       resetView: 0,
+      explosionGap: 0,
     }),
 }));
 

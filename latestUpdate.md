@@ -13,6 +13,9 @@ A new "Stamped Pattern" system has been implemented as an alternative to the tra
     *   **Spacing**: Slide control (2mm - 50mm) for the distance between stamps.
     *   **Stamp Depth**: Slide control (0.5mm - 10mm) for how deep the stamp cuts into the frame.
     *   **Corner Joints**: Selection between `Butt (Top/Bottom overlap)`, `Butt (Left/Right overlap)`, and `Cyclic`.
+*   **Build Plate Features**:
+    *   **Exploded 3D Preview**: When the Build Plate is enabled, the 3D preview now renders each individual split part and connector (tenon) as a separate mesh.
+    *   **Preview Explosion Slider**: Added a slider to the Build Plate section that allows users to visually "explode" the frame parts, making it easy to inspect joinery and internal cuts.
 *   **URL Syncing**: All new parameters (`fs`, `st`, `ss`, `sd`, `sc`, `sp`) are encoded and decoded to maintain shareable URLs.
 
 ## Segment Building & Corner Logic

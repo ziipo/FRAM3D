@@ -72,9 +72,9 @@ function ExplodedPart({ part, gap, allParts }: { part: any, gap: number, allPart
     const sideParts = allParts.filter(p => p.name.startsWith(sidePrefix + '-'));
     const pieceCount = sideParts.length;
 
-    // Bottom and Right sides have reversed coordinate orders relative to their world axes
-    const isReversed = sidePrefix === 'bottom' || sidePrefix === 'right';
-    const multiplier = isReversed ? -1 : 1;
+    // Use a negative multiplier to ensure pieces move outward along their split axis 
+    // across all sides of the frame.
+    const multiplier = -1;
 
     if (name.includes('tenon')) {
       // Tenon sits between piece idx and idx+1. Effective index is idx + 0.5.

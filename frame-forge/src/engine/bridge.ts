@@ -21,12 +21,6 @@ export function meshToThreeGeometry(meshData: WorkerMeshData): THREE.BufferGeome
     new THREE.BufferAttribute(meshData.positions, 3)
   );
 
-  // Set normal attribute
-  geometry.setAttribute(
-    'normal',
-    new THREE.BufferAttribute(meshData.normals, 3)
-  );
-
   // Set index
   geometry.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
 
@@ -45,6 +39,6 @@ export function createFrameMaterial(color: string = '#b8b8b8'): THREE.MeshStanda
     color: new THREE.Color(color),
     metalness: 0.1,
     roughness: 0.6,
-    flatShading: false,
+    flatShading: true,
   });
 }

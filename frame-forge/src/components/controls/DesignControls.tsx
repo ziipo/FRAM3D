@@ -20,8 +20,8 @@ export function DesignControls() {
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        // Draw to a small canvas to keep polygon count manageable for 3D operations
-        const size = 64;
+        // Draw to a larger canvas for better detail
+        const size = 128;
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;

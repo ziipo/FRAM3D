@@ -23,6 +23,7 @@ function FrameMesh() {
         color="#b8b8b8"
         metalness={0.1}
         roughness={0.6}
+        flatShading={true}
       />
     </mesh>
   );

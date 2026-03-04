@@ -85,7 +85,7 @@ export const frameProfiles: FrameProfile[] = [
     description: 'Concave curved face',
     points: [
       { x: 0, y: 1 },    // Inner top
-      ...createArc(0.5, 1, 0.5, 0.4, Math.PI, 0, 12).map(p => ({
+      ...createArc(0.5, 1, 0.5, 0.4, Math.PI, Math.PI * 2, 12).map(p => ({
         x: p.x,
         y: p.y,
       })),
@@ -120,8 +120,8 @@ export const frameProfiles: FrameProfile[] = [
     description: 'Raised lip at inner edge',
     points: [
       { x: 0, y: 1 },      // Inner top
-      { x: 0.25, y: 1 },   // Lip top
-      { x: 0.25, y: 0.6 }, // Step down
+      { x: 0.45, y: 1 },   // Lip top
+      { x: 0.45, y: 0.6 }, // Step down
       { x: 1, y: 0.6 },    // Outer top
       { x: 1, y: 0 },      // Outer bottom
       { x: 0, y: 0 },      // Inner bottom

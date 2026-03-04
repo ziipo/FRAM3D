@@ -1,5 +1,6 @@
 import { useFrameStore } from '../../store/useFrameStore';
 import { ProfileSelector } from './ProfileSelector';
+import { contours } from 'd3-contour';
 
 export function DesignControls() {
   const frameStyle = useFrameStore((s) => s.frameStyle);
@@ -10,6 +11,71 @@ export function DesignControls() {
   const stampCornerStyle = useFrameStore((s) => s.stampCornerStyle);
   const stampSpacing = useFrameStore((s) => s.stampSpacing);
   const stampDepth = useFrameStore((s) => s.stampDepth);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Draw to a small canvas to keep polygon count manageable for 3D operations
+        const size = 64;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Fill with white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, size, size);
+
+        // Draw image stretched to fit
+        ctx.drawImage(img, 0, 0, size, size);
+
+        const imgData = ctx.getImageData(0, 0, size, size);
+        const data = imgData.data;
+
+        // Convert to luminance (grayscale)
+        const values = new Array(size * size);
+        for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+          const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          // Invert so dark pixels become high values, as d3-contour traces values > threshold
+          values[j] = 255 - lum;
+        }
+
+        // Trace contours at 50% threshold
+        const contourGenerator = contours().size([size, size]).thresholds([128]);
+        const contourData = contourGenerator(values);
+
+        if (contourData.length > 0) {
+          // Coordinates is a MultiPolygon: array of polygons -> array of rings -> array of [x, y]
+          const multiPolygon = contourData[0].coordinates;
+
+          // Normalize coordinates to [-0.5, 0.5] range, flipping Y for intuitive orientation
+          const normalized = multiPolygon.map((polygon) =>
+            polygon.map((ring) =>
+              ring.map(
+                ([x, y]) =>
+                  [
+                    (x - size / 2) / size,
+                    -(y - size / 2) / size,
+                  ] as [number, number]
+              )
+            )
+          );
+
+          setParam('customStampPolygons', normalized);
+          // Set type to custom if it isn't already
+          setParam('stampType', 'custom');
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="space-y-4">
@@ -55,8 +121,26 @@ export function DesignControls() {
               <option value="dots">Dots</option>
               <option value="chevrons">Chevrons</option>
               <option value="stripes">Stripes</option>
+              <option value="diamonds">Diamonds</option>
+              <option value="hexagons">Hexagons</option>
+              <option value="custom">Custom Image...</option>
             </select>
           </div>
+
+          {stampType === 'custom' && (
+            <div className="space-y-2 bg-neutral-800 p-3 rounded-lg border border-neutral-700">
+              <label className="block text-xs text-neutral-400">Upload Stamp Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="w-full text-xs text-neutral-300 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-blue-500 file:text-white hover:file:bg-blue-600"
+              />
+              <p className="text-[10px] text-neutral-500 mt-1">
+                For best results, upload a high-contrast black and white image. Dark areas will be stamped out.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="block text-xs text-neutral-400">Pattern Layout</label>

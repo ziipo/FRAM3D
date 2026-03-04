@@ -7,7 +7,8 @@ A new "Stamped Pattern" system has been implemented as an alternative to the tra
 *   **Design Controls Component**: Replaced the previous `ProfileSelector` with a new `DesignControls` sidebar section.
 *   **Style Toggle**: Users can now select between `Extruded Profile` and `Stamped Pattern` modes.
 *   **Stamping Parameters**:
-    *   **Stamp Shape**: `dots` (cylinders), `chevrons` (triangular prisms), `stripes` (rectangular notches).
+    *   **Stamp Shape**: `dots` (cylinders), `chevrons` (triangular prisms), `stripes` (rectangular notches), `diamonds` (square prisms), `hexagons` (hexagonal prisms), and `custom` (Custom Image tracing).
+    *   **Custom Image**: When `custom` is selected, an image upload input appears. Uploaded images (PNG, JPEG, SVG) are processed in the browser to extract high-contrast contours (using `d3-contour`), which are then converted into custom 3D stamps.
     *   **Pattern Layout**: Choose between `repeating` (same orientation) or `alternating` (every other stamp is rotated 180° around the normal axis).
     *   **Spacing**: Slide control (2mm - 50mm) for the distance between stamps.
     *   **Stamp Depth**: Slide control (0.5mm - 10mm) for how deep the stamp cuts into the frame.

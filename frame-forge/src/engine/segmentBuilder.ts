@@ -162,7 +162,7 @@ export function applyStampPattern(
 
   if (!stampType || stampSpacing <= 0) return segment;
 
-  const tool = createStampTool(wasm, stampType, frameWidth, stampDepth);
+  const tool = createStampTool(wasm, stampType, frameWidth, stampDepth, params.customStampPolygons);
   if (!tool) return segment;
 
   const tools: Manifold[] = [];
@@ -215,7 +215,8 @@ function createStampTool(
   wasm: ManifoldToplevel,
   type: string,
   frameWidth: number,
-  depth: number
+  depth: number,
+  customPolygons?: [number, number][][][]
 ): Manifold | null {
   const M = wasm.Manifold;
   // Make the tool slightly deeper than needed so it cuts cleanly
@@ -267,6 +268,62 @@ function createStampTool(
       const extruded = profile.extrude(cutDepth);
       // Extruded is along Z axis. Base at Z=0, top at Z=cutDepth.
       // We want it along Y axis, pointing "down" into the frame.
+      const res = extruded
+        .translate([0, 0, -cutDepth])
+        .rotate([-90, 0, 0]);
+      profile.delete();
+      return res;
+    }
+    case 'diamonds': {
+      const cs = wasm.CrossSection;
+      const halfW = toolSize / 2;
+      const pts = [
+        [0, halfW],
+        [-halfW, 0],
+        [0, -halfW],
+        [halfW, 0]
+      ];
+      const profile = cs.ofPolygons([pts.map(p => [p[0], p[1]] as [number, number])]);
+      const extruded = profile.extrude(cutDepth);
+      const res = extruded
+        .translate([0, 0, -cutDepth])
+        .rotate([-90, 0, 0]);
+      profile.delete();
+      return res;
+    }
+    case 'hexagons': {
+      const cs = wasm.CrossSection;
+      const radius = toolSize / 2;
+      const pts = [];
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i;
+        pts.push([Math.cos(angle) * radius, Math.sin(angle) * radius]);
+      }
+      const profile = cs.ofPolygons([pts.map(p => [p[0], p[1]] as [number, number])]);
+      const extruded = profile.extrude(cutDepth);
+      const res = extruded
+        .translate([0, 0, -cutDepth])
+        .rotate([-90, 0, 0]);
+      profile.delete();
+      return res;
+    }
+    case 'custom': {
+      if (!customPolygons || customPolygons.length === 0) return null;
+      const cs = wasm.CrossSection;
+      
+      const manifoldPolygons: [number, number][][] = [];
+      
+      // customPolygons is a MultiPolygon: array of polygons, each is an array of rings, each ring is [x,y]
+      for (const polygon of customPolygons) {
+        for (const ring of polygon) {
+          // Scale normalized [-0.5, 0.5] coordinates to toolSize
+          const scaledRing = ring.map(p => [p[0] * toolSize, p[1] * toolSize] as [number, number]);
+          manifoldPolygons.push(scaledRing);
+        }
+      }
+      
+      const profile = cs.ofPolygons(manifoldPolygons);
+      const extruded = profile.extrude(cutDepth);
       const res = extruded
         .translate([0, 0, -cutDepth])
         .rotate([-90, 0, 0]);

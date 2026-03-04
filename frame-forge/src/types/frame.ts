@@ -44,6 +44,7 @@ export interface FrameParams {
   stampDepth: number;
   stampCornerStyle: 'butt-h' | 'butt-v' | 'cyclic';
   stampPattern: 'repeating' | 'alternating';
+  customStampPolygons: [number, number][][][]; // MultiPolygon: array of polygons, each is an array of rings, each ring is an array of [x, y]
 
   frameWidth: number;   // mm, width of the molding
   frameDepth: number;   // mm, total thickness

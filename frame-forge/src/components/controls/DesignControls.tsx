@@ -74,10 +74,11 @@ export function DesignControls() {
             <label className="block text-xs text-neutral-400">Corner Joints</label>
             <select
               value={stampCornerStyle}
-              onChange={(e) => setParam('stampCornerStyle', e.target.value as 'butt' | 'cyclic')}
+              onChange={(e) => setParam('stampCornerStyle', e.target.value as 'butt-h' | 'butt-v' | 'cyclic')}
               className="w-full bg-neutral-700 border border-neutral-600 rounded p-1.5 text-sm text-white"
             >
-              <option value="butt">Butt (Top/Bottom overlap)</option>
+              <option value="butt-h">Butt (Top/Bottom overlap)</option>
+              <option value="butt-v">Butt (Left/Right overlap)</option>
               <option value="cyclic">Cyclic (Pinwheel)</option>
             </select>
           </div>

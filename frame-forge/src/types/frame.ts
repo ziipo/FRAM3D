@@ -42,7 +42,7 @@ export interface FrameParams {
   stampType: string;
   stampSpacing: number;
   stampDepth: number;
-  stampCornerStyle: 'butt' | 'cyclic';
+  stampCornerStyle: 'butt-h' | 'butt-v' | 'cyclic';
   stampPattern: 'repeating' | 'alternating';
 
   frameWidth: number;   // mm, width of the molding

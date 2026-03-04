@@ -50,6 +50,9 @@ interface FrameState extends FrameParams {
   // Callback for triggering split export from ExportButton
   triggerSplitExport: (() => void) | null;
 
+  // View reset state
+  resetView: number;
+
   // Actions
   setParam: <K extends keyof FrameParams>(key: K, value: FrameParams[K]) => void;
   setParams: (params: Partial<FrameParams>) => void;
@@ -78,6 +81,7 @@ interface FrameState extends FrameParams {
   setSplitExportResult: (zipData: ArrayBuffer, info: SplitInfo) => void;
   clearSplitExport: () => void;
   setTriggerSplitExport: (fn: (() => void) | null) => void;
+  requestResetView: () => void;
   resetToDefaults: () => void;
 }
 
@@ -93,7 +97,7 @@ const defaultParams: FrameParams = {
   stampType: 'dots',
   stampSpacing: 10,
   stampDepth: 2,
-  stampCornerStyle: 'butt',
+  stampCornerStyle: 'butt-h',
   stampPattern: 'repeating',
   frameWidth: 25,
   frameDepth: 15,
@@ -149,6 +153,9 @@ export const useFrameStore = create<FrameState>((set) => ({
   splitExportData: null,
   splitInfo: null,
   triggerSplitExport: null,
+
+  // View reset state
+  resetView: 0,
 
   // Actions
   setParam: (key, value) =>
@@ -245,6 +252,9 @@ export const useFrameStore = create<FrameState>((set) => ({
   setTriggerSplitExport: (fn) =>
     set({ triggerSplitExport: fn }),
 
+  requestResetView: () =>
+    set((state) => ({ resetView: state.resetView + 1 })),
+
   resetToDefaults: () =>
     set({
       ...defaultParams,
@@ -258,6 +268,7 @@ export const useFrameStore = create<FrameState>((set) => ({
       splitExportData: null,
       splitInfo: null,
       isSplitExporting: false,
+      resetView: 0,
     }),
 }));
 

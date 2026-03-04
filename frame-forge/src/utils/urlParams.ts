@@ -65,7 +65,9 @@ export function decodeParams(hash: string): Partial<FrameParams> | null {
     if (data.st) params.stampType = data.st;
     if (typeof data.ss === 'number') params.stampSpacing = data.ss;
     if (typeof data.sd === 'number') params.stampDepth = data.sd;
-    if (data.sc === 'butt' || data.sc === 'cyclic') params.stampCornerStyle = data.sc;
+    if (data.sc === 'butt' || data.sc === 'butt-h' || data.sc === 'butt-v' || data.sc === 'cyclic') {
+      params.stampCornerStyle = data.sc === 'butt' ? 'butt-h' : data.sc;
+    }
     if (data.sp === 'repeating' || data.sp === 'alternating') params.stampPattern = data.sp;
     if (data.pr) params.profileId = data.pr;
     if (typeof data.rw === 'number') params.rabbetWidth = data.rw;

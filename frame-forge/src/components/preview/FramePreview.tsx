@@ -15,20 +15,6 @@ function FrameMesh() {
     return meshToThreeGeometry(meshData);
   }, [meshData]);
 
-  // Center camera on mesh when it changes
-  const { camera } = useThree();
-  useEffect(() => {
-    if (geometry && meshRef.current) {
-      geometry.computeBoundingSphere();
-      const sphere = geometry.boundingSphere;
-      if (sphere) {
-        const distance = sphere.radius * 3;
-        camera.position.set(distance, distance * 0.8, distance);
-        camera.lookAt(sphere.center);
-      }
-    }
-  }, [geometry, camera]);
-
   if (!geometry) return null;
 
   return (
@@ -39,6 +25,56 @@ function FrameMesh() {
         roughness={0.6}
       />
     </mesh>
+  );
+}
+
+/**
+ * Internal component to handle view resets via store state
+ */
+function ViewManager() {
+  const { camera, controls } = useThree();
+  const resetView = useFrameStore((s) => s.resetView);
+  
+  useEffect(() => {
+    if (resetView > 0) {
+      // Reset camera position
+      camera.position.set(200, 150, 200);
+      camera.lookAt(0, 0, 0);
+      
+      // Reset OrbitControls
+      if (controls) {
+        // @ts-expect-error - controls is unknown but we know it's OrbitControls
+        controls.reset();
+      }
+    }
+  }, [resetView, camera, controls]);
+
+  return null;
+}
+
+function ResetViewButton() {
+  const requestResetView = useFrameStore((s) => s.requestResetView);
+
+  return (
+    <button
+      onClick={requestResetView}
+      className="absolute bottom-4 right-4 bg-neutral-800/80 hover:bg-neutral-700 text-white p-2 rounded-full shadow-lg transition-colors z-20"
+      title="Reset View"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="w-5 h-5"
+      >
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+    </button>
   );
 }
 
@@ -86,6 +122,9 @@ function Scene() {
         minDistance={50}
         maxDistance={1000}
       />
+      
+      {/* View state manager */}
+      <ViewManager />
     </>
   );
 }
@@ -149,6 +188,7 @@ export function FramePreview() {
       >
         <Scene />
       </Canvas>
+      <ResetViewButton />
       <LoadingOverlay />
       <ErrorOverlay />
     </div>

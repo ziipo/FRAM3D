@@ -56,7 +56,7 @@ function generateStampedFrame(
   const fw = params.frameWidth;
   let bottomLen: number, topLen: number, leftLen: number, rightLen: number;
 
-  if (params.stampCornerStyle === 'butt') {
+  if (params.stampCornerStyle === 'butt-h') {
     // Butt joints (Top/Bottom overlap)
     // Top & Bottom are full length (outerWidth)
     // Left & Right are shortened (innerHeight)
@@ -64,9 +64,14 @@ function generateStampedFrame(
     topLen = dims.outerWidth;
     leftLen = dims.innerHeight;
     rightLen = dims.innerHeight;
-    
-    // Left/Right need to be centered vertically, but our segmentBuilder base translation puts them 
-    // at -outerHeight/2 to outerHeight/2. Since length is innerHeight, we need to shift them by frameWidth
+  } else if (params.stampCornerStyle === 'butt-v') {
+    // Butt joints (Left/Right overlap)
+    // Left & Right are full length (outerHeight)
+    // Top & Bottom are shortened (innerWidth)
+    bottomLen = dims.innerWidth;
+    topLen = dims.innerWidth;
+    leftLen = dims.outerHeight;
+    rightLen = dims.outerHeight;
   } else {
     // Cyclic (Pinwheel)
     // All 4 segments shortened by frameWidth (outerWidth - fw, outerHeight - fw)
@@ -94,13 +99,18 @@ function generateStampedFrame(
   let right = positionRightSegment(rightRaw, dims, params);
 
   // Adjust positioning based on butt/cyclic
-  if (params.stampCornerStyle === 'butt') {
+  if (params.stampCornerStyle === 'butt-h') {
     // Top/Bottom are already correct since they use outerWidth.
     // Left segment naturally spans [0, leftLen] in Z before rotation. 
     // segmentBuilder places the start of Z at -outerHeight/2 for Left, and end of Z at +outerHeight/2 for Right.
     // We need to shift them to center them along the Y axis.
     left = left.translate([0, fw, 0]);
     right = right.translate([0, -fw, 0]);
+  } else if (params.stampCornerStyle === 'butt-v') {
+    // Left/Right are already correct since they use outerHeight.
+    // Top/Bottom need to be shifted along world X to center them.
+    bottom = bottom.translate([-fw, 0, 0]);
+    top = top.translate([fw, 0, 0]);
   }
 
   // Union all 4 segments

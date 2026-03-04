@@ -72,6 +72,10 @@ function ExplodedPart({ part, gap, allParts }: { part: any, gap: number, allPart
     const sideParts = allParts.filter(p => p.name.startsWith(sidePrefix + '-'));
     const pieceCount = sideParts.length;
 
+    // Bottom and Right sides have reversed coordinate orders relative to their world axes
+    const isReversed = sidePrefix === 'bottom' || sidePrefix === 'right';
+    const multiplier = isReversed ? -1 : 1;
+
     if (name.includes('tenon')) {
       // Tenon sits between piece idx and idx+1. Effective index is idx + 0.5.
       const tenonMatch = name.match(/tenon-[a-z]+-(\d+)\.stl/);
@@ -80,9 +84,9 @@ function ExplodedPart({ part, gap, allParts }: { part: any, gap: number, allPart
         const shift = (tIdx + 0.5) - (pieceCount + 1) / 2;
         
         if (sidePrefix === 'top' || sidePrefix === 'bottom') {
-          offset[0] += shift * gap;
+          offset[0] += shift * gap * multiplier;
         } else {
-          offset[1] += shift * gap;
+          offset[1] += shift * gap * multiplier;
         }
       }
     } else {
@@ -94,10 +98,10 @@ function ExplodedPart({ part, gap, allParts }: { part: any, gap: number, allPart
         
         if (sidePrefix === 'top' || sidePrefix === 'bottom') {
           // Split along X axis
-          offset[0] += shift * gap;
+          offset[0] += shift * gap * multiplier;
         } else {
           // Split along Y axis
-          offset[1] += shift * gap;
+          offset[1] += shift * gap * multiplier;
         }
       }
     }

@@ -52,62 +52,59 @@ async function handleGenerate(
     const result = generateFrame(manifoldModule, params);
     const { manifold: frame, mesh, dimensions } = result;
 
-    // Handle split parts if build plate is enabled OR joinery is enabled
-    let splitPartsData: ResultMessage['splitParts'] = undefined;
+    // We now always generate split parts for preview so the user can use the explosion slider
+    // regardless of joinery or build plate settings.
+    sendProgress('Generating split parts for preview...', 50);
+    
     const transferList: ArrayBuffer[] = [];
+    
+    // If build plate is disabled, we use a huge plate so only corners are split
+    const plateW = buildPlate ? buildPlate.width : 10000;
+    const plateD = buildPlate ? buildPlate.depth : 10000;
 
-    // We split for preview if build plate is enabled OR joinery is configured
-    if (buildPlate || (params.connector && params.connector.type !== 'none')) {
-      sendProgress('Generating split parts for preview...', 50);
+    const splitResult = splitFrameForExport(
+      manifoldModule,
+      params,
+      plateW,
+      plateD,
+      params.connector
+    );
+    
+    const splitPartsData = splitResult.parts.map(part => {
+      const m = part.manifold.getMesh();
+      const positions = new Float32Array(m.numVert * 3);
+      const normals = new Float32Array(m.numVert * 3);
+      const indices = new Uint32Array(m.numTri * 3);
+
+      for (let i = 0; i < m.numVert; i++) {
+        const pos = m.position(i);
+        positions[i * 3] = pos[0];
+        positions[i * 3 + 1] = pos[1];
+        positions[i * 3 + 2] = pos[2];
+      }
+
+      for (let i = 0; i < m.numTri; i++) {
+        const v = m.verts(i);
+        indices[i * 3] = v[0];
+        indices[i * 3 + 1] = v[1];
+        indices[i * 3 + 2] = v[2];
+      }
+
+      computeNormals(positions, indices, normals);
       
-      // If build plate is disabled but joinery is on, we use a huge plate so only corners are split
-      const plateW = buildPlate ? buildPlate.width : 10000;
-      const plateD = buildPlate ? buildPlate.depth : 10000;
-
-      const splitResult = splitFrameForExport(
-        manifoldModule,
-        params,
-        plateW,
-        plateD,
-        params.connector
-      );
+      transferList.push(positions.buffer, normals.buffer, indices.buffer);
       
-      splitPartsData = splitResult.parts.map(part => {
-        const m = part.manifold.getMesh();
-        const positions = new Float32Array(m.numVert * 3);
-        const normals = new Float32Array(m.numVert * 3);
-        const indices = new Uint32Array(m.numTri * 3);
-
-        for (let i = 0; i < m.numVert; i++) {
-          const pos = m.position(i);
-          positions[i * 3] = pos[0];
-          positions[i * 3 + 1] = pos[1];
-          positions[i * 3 + 2] = pos[2];
-        }
-
-        for (let i = 0; i < m.numTri; i++) {
-          const v = m.verts(i);
-          indices[i * 3] = v[0];
-          indices[i * 3 + 1] = v[1];
-          indices[i * 3 + 2] = v[2];
-        }
-
-        computeNormals(positions, indices, normals);
-        
-        transferList.push(positions.buffer, normals.buffer, indices.buffer);
-        
-        // Clean up part manifold
-        part.manifold.delete();
-        
-        return {
-          name: part.name,
-          positions,
-          normals,
-          indices,
-          worldPos: part.worldPos
-        };
-      });
-    }
+      // Clean up part manifold
+      part.manifold.delete();
+      
+      return {
+        name: part.name,
+        positions,
+        normals,
+        indices,
+        worldPos: part.worldPos
+      };
+    });
 
     sendProgress('Preparing mesh data...', 70);
 

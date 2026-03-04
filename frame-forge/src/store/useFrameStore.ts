@@ -23,6 +23,7 @@ interface FrameState extends FrameParams {
     positions: Float32Array;
     normals: Float32Array;
     indices: Uint32Array;
+    worldPos?: [number, number, number];
   }> | null;
 
   // STL data (for export)
@@ -36,19 +37,6 @@ interface FrameState extends FrameParams {
   buildPlateCustomWidth: number;
   buildPlateCustomDepth: number;
   buildPlateEnabled: boolean;
-
-  // Connector settings
-  connectorType: ConnectorType;
-  floatingTenonLength: number;
-  floatingTenonWallThickness: number;
-  floatingTenonToleranceXY: number;
-  floatingTenonToleranceZ: number;
-  floatingTenonFillFraction: number;
-  tongueGrooveLength: number;
-  tongueGrooveWallThickness: number;
-  tongueGrooveToleranceXY: number;
-  tongueGrooveToleranceZ: number;
-  tongueGrooveFillFraction: number;
 
   // Split export state
   isSplitExporting: boolean;
@@ -65,6 +53,7 @@ interface FrameState extends FrameParams {
   // Actions
   setParam: <K extends keyof FrameParams>(key: K, value: FrameParams[K]) => void;
   setParams: (params: Partial<FrameParams>) => void;
+  setConnector: (connector: Partial<ConnectorSettings>) => void;
   setGenerating: (isGenerating: boolean) => void;
   setProgress: (percent: number, stage: string) => void;
   setError: (error: string | null) => void;
@@ -77,17 +66,6 @@ interface FrameState extends FrameParams {
   setBuildPlateCustomDepth: (depth: number) => void;
   setBuildPlateEnabled: (enabled: boolean) => void;
   setExplosionGap: (v: number) => void;
-  setConnectorType: (type: ConnectorType) => void;
-  setFloatingTenonLength: (v: number) => void;
-  setFloatingTenonWallThickness: (v: number) => void;
-  setFloatingTenonToleranceXY: (v: number) => void;
-  setFloatingTenonToleranceZ: (v: number) => void;
-  setFloatingTenonFillFraction: (v: number) => void;
-  setTongueGrooveLength: (v: number) => void;
-  setTongueGrooveWallThickness: (v: number) => void;
-  setTongueGrooveToleranceXY: (v: number) => void;
-  setTongueGrooveToleranceZ: (v: number) => void;
-  setTongueGrooveFillFraction: (v: number) => void;
   setSplitExporting: (exporting: boolean) => void;
   setSplitExportResult: (zipData: ArrayBuffer, info: SplitInfo) => void;
   clearSplitExport: () => void;
@@ -114,6 +92,25 @@ const defaultParams: FrameParams = {
   frameWidth: 25,
   frameDepth: 15,
   profileId: defaultProfileId,
+
+  // Joinery
+  connector: {
+    type: 'none',
+    floatingTenon: {
+      tenonLength: 15,
+      wallThickness: 2,
+      toleranceXY: 0.2,
+      toleranceZ: 0.5,
+      fillFraction: 0.8,
+    },
+    tongueGroove: {
+      tongueLength: 10,
+      wallThickness: 2,
+      toleranceXY: 0.2,
+      toleranceZ: 0.5,
+      fillFraction: 0.8,
+    },
+  },
 
   // Rabbet
   rabbetWidth: 8,
@@ -148,19 +145,6 @@ export const useFrameStore = create<FrameState>((set) => ({
   buildPlateCustomDepth: 220,
   buildPlateEnabled: false,
 
-  // Connector settings
-  connectorType: 'floating-tenon' as ConnectorType,
-  floatingTenonLength: 15,
-  floatingTenonWallThickness: 2,
-  floatingTenonToleranceXY: 0.2,
-  floatingTenonToleranceZ: 0.5,
-  floatingTenonFillFraction: 0.8,
-  tongueGrooveLength: 10,
-  tongueGrooveWallThickness: 2,
-  tongueGrooveToleranceXY: 0.2,
-  tongueGrooveToleranceZ: 0.5,
-  tongueGrooveFillFraction: 0.8,
-
   // Split export state
   isSplitExporting: false,
   splitExportData: null,
@@ -186,6 +170,18 @@ export const useFrameStore = create<FrameState>((set) => ({
     set((state) => ({
       ...state,
       ...params,
+      error: null,
+      splitExportData: null,
+      splitInfo: null,
+    })),
+
+  setConnector: (connector) =>
+    set((state) => ({
+      ...state,
+      connector: {
+        ...state.connector,
+        ...connector,
+      },
       error: null,
       splitExportData: null,
       splitInfo: null,
@@ -226,39 +222,6 @@ export const useFrameStore = create<FrameState>((set) => ({
 
   setExplosionGap: (explosionGap) =>
     set({ explosionGap }),
-
-  setConnectorType: (connectorType) =>
-    set({ connectorType, splitExportData: null, splitInfo: null }),
-
-  setFloatingTenonLength: (floatingTenonLength) =>
-    set({ floatingTenonLength, splitExportData: null, splitInfo: null }),
-
-  setFloatingTenonWallThickness: (floatingTenonWallThickness) =>
-    set({ floatingTenonWallThickness, splitExportData: null, splitInfo: null }),
-
-  setFloatingTenonToleranceXY: (floatingTenonToleranceXY) =>
-    set({ floatingTenonToleranceXY, splitExportData: null, splitInfo: null }),
-
-  setFloatingTenonToleranceZ: (floatingTenonToleranceZ) =>
-    set({ floatingTenonToleranceZ, splitExportData: null, splitInfo: null }),
-
-  setFloatingTenonFillFraction: (floatingTenonFillFraction) =>
-    set({ floatingTenonFillFraction, splitExportData: null, splitInfo: null }),
-
-  setTongueGrooveLength: (tongueGrooveLength) =>
-    set({ tongueGrooveLength, splitExportData: null, splitInfo: null }),
-
-  setTongueGrooveWallThickness: (tongueGrooveWallThickness) =>
-    set({ tongueGrooveWallThickness, splitExportData: null, splitInfo: null }),
-
-  setTongueGrooveToleranceXY: (tongueGrooveToleranceXY) =>
-    set({ tongueGrooveToleranceXY, splitExportData: null, splitInfo: null }),
-
-  setTongueGrooveToleranceZ: (tongueGrooveToleranceZ) =>
-    set({ tongueGrooveToleranceZ, splitExportData: null, splitInfo: null }),
-
-  setTongueGrooveFillFraction: (tongueGrooveFillFraction) =>
-    set({ tongueGrooveFillFraction, splitExportData: null, splitInfo: null }),
 
   setSplitExporting: (isSplitExporting) =>
     set({ isSplitExporting }),
@@ -315,6 +278,7 @@ export function selectFrameParams(state: FrameState): FrameParams {
     frameWidth: state.frameWidth,
     frameDepth: state.frameDepth,
     profileId: state.profileId,
+    connector: state.connector,
     rabbetWidth: state.rabbetWidth,
     rabbetDepth: state.rabbetDepth,
     displayUnit: state.displayUnit,

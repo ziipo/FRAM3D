@@ -1,6 +1,6 @@
 import Module from 'manifold-3d';
 import type { ManifoldToplevel } from 'manifold-3d';
-import type { WorkerMessage, WorkerResponse, FrameParams, ConnectorSettings, SplitExportResultMessage, ResultMessage } from '../types/frame';
+import type { WorkerMessage, WorkerResponse, FrameParams, SplitExportResultMessage, ResultMessage } from '../types/frame';
 import { generateFrame } from './frameGenerator';
 import { splitFrameForExport } from './frameSplitter';
 import { createZipArchive } from './zipWriter';
@@ -26,9 +26,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const message = event.data;
 
   if (message.type === 'generate') {
-    await handleGenerate(message.params, message.buildPlate, message.connector);
+    await handleGenerate(message.params, message.buildPlate);
   } else if (message.type === 'split-export') {
-    await handleSplitExport(message.params, message.buildPlate, message.connector);
+    await handleSplitExport(message.params, message.buildPlate);
   }
 };
 
@@ -37,8 +37,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
  */
 async function handleGenerate(
   params: FrameParams,
-  buildPlate?: { width: number; depth: number },
-  connector?: ConnectorSettings
+  buildPlate?: { width: number; depth: number }
 ): Promise<void> {
   try {
     // Send progress update
@@ -53,18 +52,24 @@ async function handleGenerate(
     const result = generateFrame(manifoldModule, params);
     const { manifold: frame, mesh, dimensions } = result;
 
-    // Handle split parts if build plate is enabled
+    // Handle split parts if build plate is enabled OR joinery is enabled
     let splitPartsData: ResultMessage['splitParts'] = undefined;
     const transferList: ArrayBuffer[] = [];
 
-    if (buildPlate && connector) {
+    // We split for preview if build plate is enabled OR joinery is configured
+    if (buildPlate || (params.connector && params.connector.type !== 'none')) {
       sendProgress('Generating split parts for preview...', 50);
+      
+      // If build plate is disabled but joinery is on, we use a huge plate so only corners are split
+      const plateW = buildPlate ? buildPlate.width : 10000;
+      const plateD = buildPlate ? buildPlate.depth : 10000;
+
       const splitResult = splitFrameForExport(
         manifoldModule,
         params,
-        buildPlate.width,
-        buildPlate.depth,
-        connector
+        plateW,
+        plateD,
+        params.connector
       );
       
       splitPartsData = splitResult.parts.map(part => {
@@ -400,8 +405,7 @@ ${triangleLines.join('\n')}
  */
 async function handleSplitExport(
   params: FrameParams,
-  buildPlate: { width: number; depth: number },
-  connector: ConnectorSettings
+  buildPlate: { width: number; depth: number }
 ): Promise<void> {
   try {
     sendProgress('Initializing...', 5);
@@ -413,7 +417,7 @@ async function handleSplitExport(
       params,
       buildPlate.width,
       buildPlate.depth,
-      connector
+      params.connector
     );
 
     sendProgress('Generating STL files...', 50);

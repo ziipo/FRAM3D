@@ -22,17 +22,6 @@ export function useFrameWorker() {
   const buildPlatePresetId = useFrameStore((s) => s.buildPlatePresetId);
   const buildPlateCustomWidth = useFrameStore((s) => s.buildPlateCustomWidth);
   const buildPlateCustomDepth = useFrameStore((s) => s.buildPlateCustomDepth);
-  const connectorType = useFrameStore((s) => s.connectorType);
-  const ftLength = useFrameStore((s) => s.floatingTenonLength);
-  const ftWall = useFrameStore((s) => s.floatingTenonWallThickness);
-  const ftTolXY = useFrameStore((s) => s.floatingTenonToleranceXY);
-  const ftTolZ = useFrameStore((s) => s.floatingTenonToleranceZ);
-  const ftFill = useFrameStore((s) => s.floatingTenonFillFraction);
-  const tgLength = useFrameStore((s) => s.tongueGrooveLength);
-  const tgWall = useFrameStore((s) => s.tongueGrooveWallThickness);
-  const tgTolXY = useFrameStore((s) => s.tongueGrooveToleranceXY);
-  const tgTolZ = useFrameStore((s) => s.tongueGrooveToleranceZ);
-  const tgFill = useFrameStore((s) => s.tongueGrooveFillFraction);
 
   const setGenerating = useFrameStore((s) => s.setGenerating);
   const setProgress = useFrameStore((s) => s.setProgress);
@@ -90,7 +79,7 @@ export function useFrameWorker() {
       worker.terminate();
       workerRef.current = null;
     };
-  }, [setGenerating, setProgress, setError, setMeshData, setSplitParts, setStlData, setThreemfData, setSplitExporting, setSplitExportResult]);
+  }, [setGenerating, setProgress, setError, setMeshData, setStlData, setThreemfData, setSplitExporting, setSplitExportResult]);
 
   // Generate function
   const generate = useCallback(() => {
@@ -113,31 +102,12 @@ export function useFrameWorker() {
       type: 'generate',
       params,
       buildPlate: state.buildPlateEnabled ? { width: plateWidth, depth: plateDepth } : undefined,
-      connector: state.buildPlateEnabled ? {
-        type: state.connectorType,
-        floatingTenon: {
-          tenonLength: state.floatingTenonLength,
-          wallThickness: state.floatingTenonWallThickness,
-          toleranceXY: state.floatingTenonToleranceXY,
-          toleranceZ: state.floatingTenonToleranceZ,
-          fillFraction: state.floatingTenonFillFraction,
-        },
-        tongueGroove: {
-          tongueLength: state.tongueGrooveLength,
-          wallThickness: state.tongueGrooveWallThickness,
-          toleranceXY: state.tongueGrooveToleranceXY,
-          toleranceZ: state.tongueGrooveToleranceZ,
-          fillFraction: state.tongueGrooveFillFraction,
-        },
-      } : undefined,
     };
 
     workerRef.current.postMessage(message);
   }, [
     params, 
     buildPlateEnabled, buildPlatePresetId, buildPlateCustomWidth, buildPlateCustomDepth,
-    connectorType, ftLength, ftWall, ftTolXY, ftTolZ, ftFill,
-    tgLength, tgWall, tgTolXY, tgTolZ, tgFill,
     setGenerating, setError
   ]);
 
@@ -162,31 +132,12 @@ export function useFrameWorker() {
       type: 'split-export',
       params,
       buildPlate: { width: plateWidth, depth: plateDepth },
-      connector: {
-        type: state.connectorType,
-        floatingTenon: {
-          tenonLength: state.floatingTenonLength,
-          wallThickness: state.floatingTenonWallThickness,
-          toleranceXY: state.floatingTenonToleranceXY,
-          toleranceZ: state.floatingTenonToleranceZ,
-          fillFraction: state.floatingTenonFillFraction,
-        },
-        tongueGroove: {
-          tongueLength: state.tongueGrooveLength,
-          wallThickness: state.tongueGrooveWallThickness,
-          toleranceXY: state.tongueGrooveToleranceXY,
-          toleranceZ: state.tongueGrooveToleranceZ,
-          fillFraction: state.tongueGrooveFillFraction,
-        },
-      },
     };
 
     workerRef.current.postMessage(message);
   }, [
     params, 
     buildPlatePresetId, buildPlateCustomWidth, buildPlateCustomDepth,
-    connectorType, ftLength, ftWall, ftTolXY, ftTolZ, ftFill,
-    tgLength, tgWall, tgTolXY, tgTolZ, tgFill,
     setSplitExporting, setError
   ]);
 

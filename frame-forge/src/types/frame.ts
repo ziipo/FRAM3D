@@ -29,46 +29,6 @@ export interface FrameProfile {
   description: string;
 }
 
-// === Frame Parameters (complete state) ===
-export interface FrameParams {
-  // Picture
-  pictureSizeId: string;
-  customWidth: number;  // mm
-  customHeight: number; // mm
-  tolerance: number;    // mm, clearance around picture
-
-  // Frame
-  frameStyle: 'profile' | 'stamp';
-  stampType: string;
-  stampSpacing: number;
-  stampDepth: number;
-  stampCornerStyle: 'butt-h' | 'butt-v' | 'cyclic';
-  stampPattern: 'repeating' | 'alternating';
-  customStampPolygons: [number, number][][][]; // MultiPolygon: array of polygons, each is an array of rings, each ring is an array of [x, y]
-
-  frameWidth: number;   // mm, width of the molding
-  frameDepth: number;   // mm, total thickness
-  profileId: string;
-
-  // Rabbet
-  rabbetWidth: number;  // mm
-  rabbetDepth: number;  // mm
-
-  // Display
-  displayUnit: Unit;
-
-  // Custom profile
-  customProfilePoints: ProfilePoint[];
-}
-
-// === Build Plate ===
-export interface BuildPlatePreset {
-  id: string;
-  label: string;
-  width: number;  // mm
-  depth: number;  // mm
-}
-
 // === Connectors ===
 export type ConnectorType = 'none' | 'floating-tenon' | 'tongue-groove';
 
@@ -94,6 +54,49 @@ export interface ConnectorSettings {
   tongueGroove: TongueGrooveSettings;
 }
 
+// === Frame Parameters (complete state) ===
+export interface FrameParams {
+  // Picture
+  pictureSizeId: string;
+  customWidth: number;  // mm
+  customHeight: number; // mm
+  tolerance: number;    // mm, clearance around picture
+
+  // Frame
+  frameStyle: 'profile' | 'stamp';
+  stampType: string;
+  stampSpacing: number;
+  stampDepth: number;
+  stampCornerStyle: 'butt-h' | 'butt-v' | 'cyclic';
+  stampPattern: 'repeating' | 'alternating';
+  customStampPolygons: [number, number][][][];
+
+  frameWidth: number;   // mm, width of the molding
+  frameDepth: number;   // mm, total thickness
+  profileId: string;
+
+  // Joinery
+  connector: ConnectorSettings;
+
+  // Rabbet
+  rabbetWidth: number;  // mm
+  rabbetDepth: number;  // mm
+
+  // Display
+  displayUnit: Unit;
+
+  // Custom profile
+  customProfilePoints: ProfilePoint[];
+}
+
+// === Build Plate ===
+export interface BuildPlatePreset {
+  id: string;
+  label: string;
+  width: number;  // mm
+  depth: number;  // mm
+}
+
 // === Split Info ===
 export interface SplitInfo {
   bottomPieces: number;  // 1 = whole, 2+ = split into N pieces
@@ -108,14 +111,12 @@ export interface GenerateMessage {
   type: 'generate';
   params: FrameParams;
   buildPlate?: { width: number; depth: number };
-  connector?: ConnectorSettings;
 }
 
 export interface SplitExportMessage {
   type: 'split-export';
   params: FrameParams;
   buildPlate: { width: number; depth: number };
-  connector: ConnectorSettings;
 }
 
 export interface ResultMessage {

@@ -28,7 +28,6 @@ export interface SplitPart {
 
 /**
  * Determine how many pieces each side needs based on build plate size.
- * A part can be rotated on the plate, so we compare against the longest plate dimension.
  */
 export function computeSplitPlan(
   dims: ComputedDimensions,
@@ -55,29 +54,25 @@ export interface DiagnosticSvg {
 interface SafeZone {
   perpCenter: number;
   zCenter: number;
-  safeWidth: number;  // extent in the perpendicular-to-split direction (bounding box upper limit)
-  safeHeight: number; // extent in the Z (depth) direction (bounding box upper limit)
-  maxRadius: number;  // from pole of inaccessibility — max inscribed circle radius
-  // Build-space coords for SVG diagnostic:
+  safeWidth: number;
+  safeHeight: number;
+  maxRadius: number;
   buildCenterX: number;
   buildCenterY: number;
 }
 
 /**
- * Find the "pole of inaccessibility" — the point furthest from all edges
- * of the cross-section. This is found by successively shrinking the polygon
- * until it collapses; the center of the last surviving polygon is the pole.
+ * Find the "pole of inaccessibility"
  */
 function findPoleOfInaccessibility(
   safeZoneSection: CrossSection
 ): { centerX: number; centerY: number; maxRadius: number } {
-  const STEP = 1.0; // Increased from 0.25mm for performance
-  const MIN_AREA = 0.01; // mm² — stop when polygon nearly vanishes
+  const STEP = 1.0;
+  const MIN_AREA = 0.01;
 
   let current = safeZoneSection.offset(0); // clone
   let maxRadius = 0;
 
-  // Start with bounds center of the input as default
   const initBounds = current.bounds();
   let bestCenterX = (initBounds.min[0] + initBounds.max[0]) / 2;
   let bestCenterY = (initBounds.min[1] + initBounds.max[1]) / 2;
@@ -101,8 +96,7 @@ function findPoleOfInaccessibility(
 }
 
 /**
- * Generate a diagnostic SVG showing the profile cross-section, safe zone,
- * pole of inaccessibility, and mortise rectangle.
+ * Generate a diagnostic SVG showing the profile cross-section, safe zone, etc.
  */
 function generateDiagnosticSVG(
   originalSection: CrossSection,
@@ -110,9 +104,8 @@ function generateDiagnosticSVG(
   mortise: { cx: number; cy: number; w: number; h: number },
   pole: { centerX: number; centerY: number; maxRadius: number }
 ): string {
-  const PAD = 2; // mm padding around viewBox
+  const PAD = 2;
 
-  // Helper: convert CrossSection polygons to SVG path data (Y-flipped)
   function sectionToPath(section: CrossSection): string {
     const polys = section.toPolygons();
     const parts: string[] = [];
@@ -121,7 +114,7 @@ function generateDiagnosticSVG(
       const commands: string[] = [];
       for (let i = 0; i < poly.length; i++) {
         const x = poly[i][0];
-        const y = -poly[i][1]; // flip Y
+        const y = -poly[i][1];
         commands.push(i === 0 ? `M${x},${y}` : `L${x},${y}`);
       }
       commands.push('Z');
@@ -130,40 +123,32 @@ function generateDiagnosticSVG(
     return parts.join(' ');
   }
 
-  // Compute viewBox from original section bounds
   const ob = originalSection.bounds();
   const vx = ob.min[0] - PAD;
-  const vy = -(ob.max[1] + PAD); // flipped
+  const vy = -(ob.max[1] + PAD);
   const vw = ob.max[0] - ob.min[0] + 2 * PAD;
   const vh = ob.max[1] - ob.min[1] + 2 * PAD;
 
   const profilePath = sectionToPath(originalSection);
   const safeZonePath = sectionToPath(safeZoneSection);
 
-  // Mortise rect coords (Y-flipped)
   const rx = mortise.cx - mortise.w / 2;
-  const ry = -(mortise.cy + mortise.h / 2); // flip Y
+  const ry = -(mortise.cy + mortise.h / 2);
   const rw = mortise.w;
   const rh = mortise.h;
 
-  // Pole center (Y-flipped)
   const px = pole.centerX;
   const py = -pole.centerY;
 
-  const strokeW = Math.max(vw, vh) * 0.005; // scale stroke to view size
+  const strokeW = Math.max(vw, vh) * 0.005;
   const dotR = strokeW * 2;
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}">`,
-    `  <!-- Profile cross-section -->`,
     `  <path d="${profilePath}" fill="#ccc" stroke="#666" stroke-width="${strokeW}" />`,
-    `  <!-- Safe zone (offset inward by wallThickness) -->`,
     `  <path d="${safeZonePath}" fill="rgba(0,180,0,0.4)" stroke="green" stroke-width="${strokeW}" />`,
-    `  <!-- Max inscribed circle at pole -->`,
     `  <circle cx="${px}" cy="${py}" r="${pole.maxRadius}" fill="none" stroke="blue" stroke-width="${strokeW}" stroke-dasharray="${strokeW * 4} ${strokeW * 2}" />`,
-    `  <!-- Mortise rectangle -->`,
     `  <rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" fill="rgba(255,0,0,0.6)" stroke="red" stroke-width="${strokeW}" />`,
-    `  <!-- Pole center -->`,
     `  <circle cx="${px}" cy="${py}" r="${dotR}" fill="black" />`,
     `</svg>`,
   ].join('\n');
@@ -288,7 +273,6 @@ function applyFloatingTenon(
   );
 
   const result = wasm.Manifold.difference(piece, mortise);
-  piece.delete();
   mortise.delete();
 
   if (originalSection && shrunkSection) {
@@ -302,8 +286,6 @@ function applyFloatingTenon(
   let tenon: Manifold | null = null;
   let tenonWorldPos: [number, number, number] | undefined = undefined;
   if (generateTenon) {
-    // For X-split, tenon orientation is [L, W, H]
-    // For Y-split, tenon orientation is [W, L, H]
     if (splitAxis === 'x') {
       tenon = wasm.Manifold.cube([tenonLength, tenonW, tenonH], true);
       tenonWorldPos = [cutOffset, safeZone.perpCenter, safeZone.zCenter];
@@ -324,6 +306,7 @@ function applyTongueGroove(
   side: 'tongue' | 'groove',
   splitAxis: 'x' | 'y',
   cutOffset: number,
+  direction: 1 | -1,
   safeZone: SafeZone,
   settings: TongueGrooveSettings,
   originalSection: CrossSection | null,
@@ -341,14 +324,14 @@ function applyTongueGroove(
   if (side === 'tongue') {
     const overlap = 1;
     const totalLen = tongueLength + overlap;
+    const splitOffset = direction === 1 ? (totalLen / 2 - overlap) : -(totalLen / 2 - overlap);
     const tongueBox = createJoineryBox(
-      wasm, splitAxis, cutOffset, totalLen / 2 - overlap,
+      wasm, splitAxis, cutOffset, splitOffset,
       totalLen, tongueW, tongueH,
       safeZone.perpCenter, safeZone.zCenter
     );
 
     const result = wasm.Manifold.union(piece, tongueBox);
-    piece.delete();
     tongueBox.delete();
 
     if (originalSection && shrunkSection) {
@@ -368,21 +351,21 @@ function applyTongueGroove(
     const grooveLen = tongueLength + toleranceZ;
     const overlap = 1;
     const totalLen = grooveLen + overlap;
+    const splitOffset = direction === 1 ? (totalLen / 2 - overlap) : -(totalLen / 2 - overlap);
     const grooveBox = createJoineryBox(
-      wasm, splitAxis, cutOffset, totalLen / 2 - overlap,
+      wasm, splitAxis, cutOffset, splitOffset,
       totalLen, grooveW, grooveH,
       safeZone.perpCenter, safeZone.zCenter
     );
 
     const result = wasm.Manifold.difference(piece, grooveBox);
-    piece.delete();
     grooveBox.delete();
     return result;
   }
 }
 
 /**
- * Build individual frame sides and split oversized ones for build plate fitting.
+ * Build individual frame sides and split them.
  */
 export function splitFrameForExport(
   wasm: ManifoldToplevel,
@@ -498,6 +481,59 @@ export function splitFrameForExport(
   const tenonParts: SplitPart[] = [];
   const diagnosticSvgs: DiagnosticSvg[] = [];
 
+  // Apply corner joinery for Stamped Butt joints
+  if (params.frameStyle === 'stamp' && connector.type !== 'none') {
+    if (params.stampCornerStyle === 'butt-h') {
+      const wallThickness = connector.type === 'floating-tenon' ? connector.floatingTenon.wallThickness : connector.tongueGroove.wallThickness;
+      const res = computeSafeZone(crossSection, wallThickness, 'bottom', params, dims);
+      if (res) {
+        const { safeZone, shrunkSection } = res;
+        const blX = -dims.innerWidth / 2 - fw / 2;
+        const brX = dims.innerWidth / 2 + fw / 2;
+        
+        // bl - bottom cap gets tongue pointing UP (+y) into left side
+        const [b1, l1] = applyCornerJoinery(wasm, bottomSide, leftSide, 'y', -dims.innerHeight / 2, true, { ...safeZone, perpCenter: blX }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-bl', tenonParts);
+        bottomSide.delete(); leftSide.delete(); bottomSide = b1; leftSide = l1;
+        
+        // br - bottom cap gets tongue pointing UP (+y) into right side
+        const [b2, r1] = applyCornerJoinery(wasm, bottomSide, rightSide, 'y', -dims.innerHeight / 2, true, { ...safeZone, perpCenter: brX }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-br', tenonParts);
+        bottomSide.delete(); rightSide.delete(); bottomSide = b2; rightSide = r1;
+        
+        // tl - top cap gets tongue pointing DOWN (-y) into left side
+        const [t1, l2] = applyCornerJoinery(wasm, topSide, leftSide, 'y', dims.innerHeight / 2, false, { ...safeZone, perpCenter: blX }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-tl', tenonParts);
+        topSide.delete(); leftSide.delete(); topSide = t1; leftSide = l2;
+        
+        // tr - top cap gets tongue pointing DOWN (-y) into right side
+        const [t2, r2] = applyCornerJoinery(wasm, topSide, rightSide, 'y', dims.innerHeight / 2, false, { ...safeZone, perpCenter: brX }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-tr', tenonParts);
+        topSide.delete(); rightSide.delete(); topSide = t2; rightSide = r2;
+      }
+    } else if (params.stampCornerStyle === 'butt-v') {
+      const wallThickness = connector.type === 'floating-tenon' ? connector.floatingTenon.wallThickness : connector.tongueGroove.wallThickness;
+      const res = computeSafeZone(crossSection, wallThickness, 'left', params, dims);
+      if (res) {
+        const { safeZone, shrunkSection } = res;
+        const tlY = dims.innerHeight / 2 + fw / 2;
+        const blY = -dims.innerHeight / 2 - fw / 2;
+        
+        // tl - left cap gets tongue pointing RIGHT (+x) into top side
+        const [l1, t1] = applyCornerJoinery(wasm, leftSide, topSide, 'x', -dims.innerWidth / 2, true, { ...safeZone, perpCenter: tlY }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-tl', tenonParts);
+        leftSide.delete(); topSide.delete(); leftSide = l1; topSide = t1;
+        
+        // bl - left cap gets tongue pointing RIGHT (+x) into bottom side
+        const [l2, b1] = applyCornerJoinery(wasm, leftSide, bottomSide, 'x', -dims.innerWidth / 2, true, { ...safeZone, perpCenter: blY }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-bl', tenonParts);
+        leftSide.delete(); bottomSide.delete(); leftSide = l2; bottomSide = b1;
+        
+        // tr - right cap gets tongue pointing LEFT (-x) into top side
+        const [r1, t2] = applyCornerJoinery(wasm, rightSide, topSide, 'x', dims.innerWidth / 2, false, { ...safeZone, perpCenter: tlY }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-tr', tenonParts);
+        rightSide.delete(); topSide.delete(); rightSide = r1; topSide = t2;
+        
+        // br - right cap gets tongue pointing LEFT (-x) into bottom side
+        const [r2, b2] = applyCornerJoinery(wasm, rightSide, bottomSide, 'x', dims.innerWidth / 2, false, { ...safeZone, perpCenter: blY }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-br', tenonParts);
+        rightSide.delete(); bottomSide.delete(); rightSide = r2; bottomSide = b2;
+      }
+    }
+  }
+
   processSide(wasm, bottomSide, 'bottom', plan.bottom, 'x',
     -dims.outerWidth / 2, dims.outerWidth / 2, dims, params, connector, crossSection, parts, tenonParts, diagnosticSvgs);
   processSide(wasm, topSide, 'top', plan.top, 'x',
@@ -507,7 +543,6 @@ export function splitFrameForExport(
   processSide(wasm, rightSide, 'right', plan.right, 'y',
     -dims.outerHeight / 2, dims.outerHeight / 2, dims, params, connector, crossSection, parts, tenonParts, diagnosticSvgs);
 
-  // Append tenon parts to output
   parts.push(...tenonParts);
 
   // Clean up
@@ -529,6 +564,59 @@ export function splitFrameForExport(
     },
     diagnosticSvgs,
   };
+}
+
+/**
+ * Apply joinery between two corner segments. Returns the two new pieces.
+ */
+function applyCornerJoinery(
+  wasm: ManifoldToplevel,
+  pieceA: Manifold,
+  pieceB: Manifold,
+  splitAxis: 'x' | 'y',
+  cutOffset: number,
+  pieceAIsNegative: boolean,
+  safeZone: SafeZone,
+  connector: ConnectorSettings,
+  crossSection: CrossSection,
+  shrunkSection: CrossSection,
+  diagnosticSvgs: DiagnosticSvg[],
+  diagName: string,
+  tenonParts: SplitPart[]
+): [Manifold, Manifold] {
+  if (connector.type === 'floating-tenon') {
+    const { piece: resA, tenon, tenonWorldPos } = applyFloatingTenon(
+      wasm, wasm.Manifold.union([pieceA]), splitAxis, cutOffset, safeZone,
+      connector.floatingTenon, true,
+      crossSection, shrunkSection, diagnosticSvgs, diagName
+    );
+    
+    if (tenon && tenonWorldPos) {
+      tenonParts.push({ name: `tenon-${diagName}.stl`, manifold: tenon, worldPos: tenonWorldPos });
+    }
+    
+    const { piece: resB } = applyFloatingTenon(
+      wasm, wasm.Manifold.union([pieceB]), splitAxis, cutOffset, safeZone,
+      connector.floatingTenon, false, null, null, [], ''
+    );
+    
+    return [resA, resB];
+    
+  } else if (connector.type === 'tongue-groove') {
+    const direction = pieceAIsNegative ? 1 : -1;
+    const resA = applyTongueGroove(
+      wasm, wasm.Manifold.union([pieceA]), 'tongue', splitAxis, cutOffset, direction,
+      safeZone, connector.tongueGroove, crossSection, shrunkSection, diagnosticSvgs, diagName
+    );
+    
+    const resB = applyTongueGroove(
+      wasm, wasm.Manifold.union([pieceB]), 'groove', splitAxis, cutOffset, direction,
+      safeZone, connector.tongueGroove, null, null, [], ''
+    );
+    
+    return [resA, resB];
+  }
+  return [wasm.Manifold.union([pieceA]), wasm.Manifold.union([pieceB])];
 }
 
 /**
@@ -619,7 +707,7 @@ function processSide(
     } else if (connector.type === 'tongue-groove' && safeZone) {
       if (j < pieceCount - 1) {
         piece = applyTongueGroove(
-          wasm, piece, 'tongue', splitAxis, cutPositions[j],
+          wasm, piece, 'tongue', splitAxis, cutPositions[j], 1,
           safeZone, connector.tongueGroove,
           crossSection, shrunkSection, diagnosticSvgs,
           `diagnostic-${sideName}-${j + 1}.svg`
@@ -628,7 +716,7 @@ function processSide(
 
       if (j > 0) {
         piece = applyTongueGroove(
-          wasm, piece, 'groove', splitAxis, cutPositions[j - 1],
+          wasm, piece, 'groove', splitAxis, cutPositions[j - 1], 1,
           safeZone, connector.tongueGroove,
           null, null, diagnosticSvgs,
           `diagnostic-${sideName}-${j}-low.svg`

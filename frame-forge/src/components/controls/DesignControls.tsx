@@ -79,10 +79,6 @@ export function DesignControls() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wide">
-        Frame Design
-      </h3>
-
       {/* Style Toggle */}
       <div className="flex bg-neutral-700/50 p-1 rounded-lg">
         <button

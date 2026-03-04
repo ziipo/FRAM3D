@@ -18,10 +18,6 @@ export function FrameControls() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wide">
-        Frame Dimensions
-      </h3>
-
       {/* Frame Width */}
       <div>
         <div className="flex justify-between text-xs mb-1">

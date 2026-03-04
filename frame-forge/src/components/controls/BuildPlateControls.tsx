@@ -21,9 +21,7 @@ export function BuildPlateControls() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wide">
-          Build Plate
-        </h3>
+        <span className="text-xs text-neutral-400">Enabled</span>
         <button
           onClick={() => setEnabled(!enabled)}
           className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${

@@ -27,10 +27,6 @@ export function DimensionControls() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wide">
-        Picture Size
-      </h3>
-
       {/* Preset selector */}
       <div>
         <label className="block text-xs text-neutral-400 mb-1">Preset</label>

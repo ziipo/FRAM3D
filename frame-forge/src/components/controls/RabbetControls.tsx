@@ -21,10 +21,6 @@ export function RabbetControls() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wide">
-        Rabbet & Tolerance
-      </h3>
-
       <p className="text-xs text-neutral-500">
         The rabbet is the ledge that holds your picture, glass, and backing.
       </p>

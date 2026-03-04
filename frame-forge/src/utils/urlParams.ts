@@ -12,6 +12,12 @@ export function encodeParams(params: FrameParams): string {
     t: Math.round(params.tolerance * 10) / 10,     // tolerance
     fw: Math.round(params.frameWidth * 10) / 10,   // frame width
     fd: Math.round(params.frameDepth * 10) / 10,   // frame depth
+    fs: params.frameStyle,          // frame style
+    st: params.stampType,           // stamp type
+    ss: Math.round(params.stampSpacing * 10) / 10, // stamp spacing
+    sd: Math.round(params.stampDepth * 10) / 10,   // stamp depth
+    sc: params.stampCornerStyle,    // stamp corner style
+    sp: params.stampPattern,        // stamp pattern
     pr: params.profileId,           // profile
     rw: Math.round(params.rabbetWidth * 10) / 10,  // rabbet width
     rd: Math.round(params.rabbetDepth * 10) / 10,  // rabbet depth
@@ -55,6 +61,12 @@ export function decodeParams(hash: string): Partial<FrameParams> | null {
     if (typeof data.t === 'number') params.tolerance = data.t;
     if (typeof data.fw === 'number') params.frameWidth = data.fw;
     if (typeof data.fd === 'number') params.frameDepth = data.fd;
+    if (data.fs === 'profile' || data.fs === 'stamp') params.frameStyle = data.fs;
+    if (data.st) params.stampType = data.st;
+    if (typeof data.ss === 'number') params.stampSpacing = data.ss;
+    if (typeof data.sd === 'number') params.stampDepth = data.sd;
+    if (data.sc === 'butt' || data.sc === 'cyclic') params.stampCornerStyle = data.sc;
+    if (data.sp === 'repeating' || data.sp === 'alternating') params.stampPattern = data.sp;
     if (data.pr) params.profileId = data.pr;
     if (typeof data.rw === 'number') params.rabbetWidth = data.rw;
     if (typeof data.rd === 'number') params.rabbetDepth = data.rd;

@@ -74,7 +74,6 @@ export function ProfileEditor() {
   const setParam = useFrameStore((s) => s.setParam);
   const svgRef = useRef<SVGSVGElement>(null);
   const [dragTarget, setDragTarget] = useState<DragTarget | null>(null);
-  const [hasDragged, setHasDragged] = useState(false);
 
   const sorted = [...customProfilePoints].sort((a, b) => a.x - b.x);
 
@@ -104,7 +103,6 @@ export function ProfileEditor() {
       e.preventDefault();
       e.stopPropagation();
       setDragTarget({ kind: 'anchor', index });
-      setHasDragged(false);
       (e.target as Element).setPointerCapture(e.pointerId);
     },
     []
@@ -116,7 +114,6 @@ export function ProfileEditor() {
       e.preventDefault();
       e.stopPropagation();
       setDragTarget({ kind: 'handle', index });
-      setHasDragged(false);
       (e.target as Element).setPointerCapture(e.pointerId);
     },
     []
@@ -140,7 +137,6 @@ export function ProfileEditor() {
 
       updatePoints(newSorted);
       setDragTarget({ kind: 'new-point', index: newIndex, originSx: sx, originSy: sy });
-      setHasDragged(false);
       // Capture on the SVG element itself
       (e.currentTarget as Element).setPointerCapture(e.pointerId);
     },
@@ -153,7 +149,6 @@ export function ProfileEditor() {
       const { x: sx, y: sy } = getSvgCoords(e);
 
       if (dragTarget.kind === 'anchor') {
-        setHasDragged(true);
         const pt = fromSvg(sx, sy);
         const newPoints = [...sorted];
         const isFirst = dragTarget.index === 0;
@@ -171,7 +166,6 @@ export function ProfileEditor() {
         };
         updatePoints(newPoints);
       } else if (dragTarget.kind === 'handle') {
-        setHasDragged(true);
         const anchor = sorted[dragTarget.index];
         const anchorSvg = toSvg(anchor);
         const dx = sx - anchorSvg.x;
@@ -188,7 +182,6 @@ export function ProfileEditor() {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist >= DRAG_THRESHOLD) {
-          setHasDragged(true);
           // Convert the drag into a handle
           const anchor = sorted[dragTarget.index];
           if (!anchor) return;
@@ -208,7 +201,6 @@ export function ProfileEditor() {
 
   const handlePointerUp = useCallback(() => {
     setDragTarget(null);
-    setHasDragged(false);
   }, []);
 
   // --- Double-click on handle dot: remove handle ---

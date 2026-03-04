@@ -38,6 +38,13 @@ export interface FrameParams {
   tolerance: number;    // mm, clearance around picture
 
   // Frame
+  frameStyle: 'profile' | 'stamp';
+  stampType: string;
+  stampSpacing: number;
+  stampDepth: number;
+  stampCornerStyle: 'butt' | 'cyclic';
+  stampPattern: 'repeating' | 'alternating';
+
   frameWidth: number;   // mm, width of the molding
   frameDepth: number;   // mm, total thickness
   profileId: string;

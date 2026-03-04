@@ -2,9 +2,11 @@ import type { Manifold, ManifoldToplevel, Mesh } from 'manifold-3d';
 import type { FrameParams, ComputedDimensions } from '../types/frame';
 import { getPictureSize } from '../data/presets';
 import { getProfileForParams } from '../data/profiles';
-import { buildProfileCrossSection } from './profileBuilder';
+import { buildProfileCrossSection, buildRectangularCrossSection } from './profileBuilder';
 import {
   buildFrameSegment,
+  buildFlatSegment,
+  applyStampPattern,
   positionBottomSegment,
   positionTopSegment,
   positionLeftSegment,
@@ -23,10 +25,117 @@ export function generateFrame(
   const dims = computeDimensions(params);
 
   try {
+    if (params.frameStyle === 'stamp') {
+      return generateStampedFrame(wasm, params, dims);
+    }
     return generateProfiledFrame(wasm, params, dims);
   } catch {
     return generateBoxFrame(wasm, params, dims);
   }
+}
+
+/**
+ * Stamp-based frame generation using 4 flat segments with specified corner style.
+ */
+function generateStampedFrame(
+  wasm: ManifoldToplevel,
+  params: FrameParams,
+  dims: ComputedDimensions
+): { manifold: Manifold; mesh: Mesh; dimensions: ComputedDimensions } {
+  const { Manifold: M } = wasm;
+
+  // For stamp mode, we use a basic rectangular profile.
+  // The rabbet is applied later as a 3D subtraction to ensure it doesn't
+  // bleed out of the corners in butt/cyclic joinery.
+  const crossSection = buildRectangularCrossSection(
+    wasm,
+    params.frameWidth,
+    params.frameDepth
+  );
+
+  const fw = params.frameWidth;
+  let bottomLen: number, topLen: number, leftLen: number, rightLen: number;
+
+  if (params.stampCornerStyle === 'butt') {
+    // Butt joints (Top/Bottom overlap)
+    // Top & Bottom are full length (outerWidth)
+    // Left & Right are shortened (innerHeight)
+    bottomLen = dims.outerWidth;
+    topLen = dims.outerWidth;
+    leftLen = dims.innerHeight;
+    rightLen = dims.innerHeight;
+    
+    // Left/Right need to be centered vertically, but our segmentBuilder base translation puts them 
+    // at -outerHeight/2 to outerHeight/2. Since length is innerHeight, we need to shift them by frameWidth
+  } else {
+    // Cyclic (Pinwheel)
+    // All 4 segments shortened by frameWidth (outerWidth - fw, outerHeight - fw)
+    bottomLen = dims.outerWidth - fw;
+    topLen = dims.outerWidth - fw;
+    leftLen = dims.outerHeight - fw;
+    rightLen = dims.outerHeight - fw;
+  }
+
+  let bottomRaw = buildFlatSegment(wasm, crossSection, bottomLen);
+  let topRaw = buildFlatSegment(wasm, crossSection, topLen);
+  let leftRaw = buildFlatSegment(wasm, crossSection, leftLen);
+  let rightRaw = buildFlatSegment(wasm, crossSection, rightLen);
+
+  // Apply stamps
+  bottomRaw = applyStampPattern(wasm, bottomRaw, bottomLen, params);
+  topRaw = applyStampPattern(wasm, topRaw, topLen, params);
+  leftRaw = applyStampPattern(wasm, leftRaw, leftLen, params);
+  rightRaw = applyStampPattern(wasm, rightRaw, rightLen, params);
+
+  // Position each segment around the frame
+  let bottom = positionBottomSegment(bottomRaw, dims, params);
+  let top = positionTopSegment(topRaw, dims, params);
+  let left = positionLeftSegment(leftRaw, dims, params);
+  let right = positionRightSegment(rightRaw, dims, params);
+
+  // Adjust positioning based on butt/cyclic
+  if (params.stampCornerStyle === 'butt') {
+    // Top/Bottom are already correct since they use outerWidth.
+    // Left segment naturally spans [0, leftLen] in Z before rotation. 
+    // segmentBuilder places the start of Z at -outerHeight/2 for Left, and end of Z at +outerHeight/2 for Right.
+    // We need to shift them to center them along the Y axis.
+    left = left.translate([0, fw, 0]);
+    right = right.translate([0, -fw, 0]);
+  }
+
+  // Union all 4 segments
+  const frame = M.union([bottom, top, left, right]);
+
+  // Apply rabbet as a 3D subtraction. This ensures the rabbet notch
+  // is only where the picture sits and doesn't extend to the outer edges.
+  const rabbetW = dims.innerWidth + 2 * params.rabbetWidth;
+  const rabbetH = dims.innerHeight + 2 * params.rabbetWidth;
+  const rabbetBox = M.cube([rabbetW, rabbetH, params.rabbetDepth], false);
+
+  const rabbetPositioned = rabbetBox.translate([
+    -rabbetW / 2,
+    -rabbetH / 2,
+    -params.frameDepth / 2,
+  ]);
+
+  const finalFrame = M.difference(frame, rabbetPositioned);
+
+  // Cleanup
+  crossSection.delete();
+  bottomRaw.delete();
+  topRaw.delete();
+  leftRaw.delete();
+  rightRaw.delete();
+  bottom.delete();
+  top.delete();
+  left.delete();
+  right.delete();
+  rabbetBox.delete();
+  rabbetPositioned.delete();
+  frame.delete();
+
+  const mesh = finalFrame.getMesh();
+  return { manifold: finalFrame, mesh, dimensions: dims };
 }
 
 /**

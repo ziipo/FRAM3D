@@ -1,6 +1,6 @@
 import { DimensionControls } from '../controls/DimensionControls';
 import { FrameControls } from '../controls/FrameControls';
-import { ProfileSelector } from '../controls/ProfileSelector';
+import { DesignControls } from '../controls/DesignControls';
 import { RabbetControls } from '../controls/RabbetControls';
 import { BuildPlateControls } from '../controls/BuildPlateControls';
 import { ExportButton } from '../controls/ExportButton';
@@ -17,7 +17,7 @@ export function Sidebar() {
 
         <div className="border-t border-neutral-700" />
 
-        <ProfileSelector />
+        <DesignControls />
 
         <div className="border-t border-neutral-700" />
 

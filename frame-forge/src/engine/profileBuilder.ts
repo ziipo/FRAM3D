@@ -96,6 +96,23 @@ export function buildProfileCrossSection(
 }
 
 /**
+ * Builds a simple rectangular cross-section.
+ */
+export function buildRectangularCrossSection(
+  wasm: ManifoldToplevel,
+  width: number,
+  depth: number
+): CrossSection {
+  const polygon: Vec2[] = [
+    [0, 0],
+    [width, 0],
+    [width, depth],
+    [0, depth],
+  ];
+  return new wasm.CrossSection([polygon]);
+}
+
+/**
  * Returns true if a point has a non-zero Bezier handle.
  */
 function hasHandle(p: ProfilePoint): boolean {

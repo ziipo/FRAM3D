@@ -262,8 +262,7 @@ function computeNormals(
  */
 function generateSTL(
   positions: Float32Array,
-  indices: Uint32Array,
-  _normals: Float32Array
+  indices: Uint32Array
 ): ArrayBuffer {
   const numTris = indices.length / 3;
 
@@ -448,7 +447,7 @@ async function handleSplitExport(
       }
 
       computeNormals(positions, indices, normals);
-      const stlData = generateSTL(positions, indices, normals);
+      const stlData = generateSTL(positions, indices);
       zipEntries.push({ filename: part.name, data: new Uint8Array(stlData) });
 
       part.manifold.delete();

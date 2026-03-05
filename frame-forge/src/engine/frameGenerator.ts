@@ -112,14 +112,12 @@ function generateStampedFrame(
     bottom = bottom.translate([-fw, 0, 0]);
     top = top.translate([fw, 0, 0]);
   } else if (params.stampCornerStyle === 'cyclic') {
-    // Top runs to Right edge. Short of Left edge.
-    top = top.translate([fw / 2, 0, 0]);
-    // Right runs to Bottom edge. Short of Top edge.
-    right = right.translate([0, -fw / 2, 0]);
-    // Bottom runs to Left edge. Short of Right edge.
-    bottom = bottom.translate([-fw / 2, 0, 0]);
-    // Left runs to Top edge. Short of Bottom edge.
-    left = left.translate([0, fw / 2, 0]);
+    // No additional translation needed for cyclic pinwheel.
+    // The default positioning of shortened segments already creates a counter-clockwise pinwheel:
+    // Bottom: reaches Right, short of Left.
+    // Right: reaches Top, short of Bottom.
+    // Top: reaches Left, short of Right.
+    // Left: reaches Bottom, short of Top.
   }
 
   // Union all 4 segments

@@ -79,7 +79,7 @@ export function useFrameWorker() {
       worker.terminate();
       workerRef.current = null;
     };
-  }, [setGenerating, setProgress, setError, setMeshData, setStlData, setThreemfData, setSplitExporting, setSplitExportResult]);
+  }, [setGenerating, setProgress, setError, setMeshData, setSplitParts, setStlData, setThreemfData, setSplitExporting, setSplitExportResult]);
 
   // Generate function
   const generate = useCallback(() => {
@@ -88,20 +88,19 @@ export function useFrameWorker() {
     setGenerating(true);
     setError(null);
 
-    const state = useFrameStore.getState();
-    const preset = getBuildPlatePreset(state.buildPlatePresetId);
+    const preset = getBuildPlatePreset(buildPlatePresetId);
 
-    const plateWidth = state.buildPlatePresetId === 'custom'
-      ? state.buildPlateCustomWidth
+    const plateWidth = buildPlatePresetId === 'custom'
+      ? buildPlateCustomWidth
       : preset?.width ?? 220;
-    const plateDepth = state.buildPlatePresetId === 'custom'
-      ? state.buildPlateCustomDepth
+    const plateDepth = buildPlatePresetId === 'custom'
+      ? buildPlateCustomDepth
       : preset?.depth ?? 220;
 
     const message: GenerateMessage = {
       type: 'generate',
       params,
-      buildPlate: state.buildPlateEnabled ? { width: plateWidth, depth: plateDepth } : undefined,
+      buildPlate: buildPlateEnabled ? { width: plateWidth, depth: plateDepth } : undefined,
     };
 
     workerRef.current.postMessage(message);
@@ -115,14 +114,13 @@ export function useFrameWorker() {
   const splitExport = useCallback(() => {
     if (!workerRef.current) return;
 
-    const state = useFrameStore.getState();
-    const preset = getBuildPlatePreset(state.buildPlatePresetId);
+    const preset = getBuildPlatePreset(buildPlatePresetId);
 
-    const plateWidth = state.buildPlatePresetId === 'custom'
-      ? state.buildPlateCustomWidth
+    const plateWidth = buildPlatePresetId === 'custom'
+      ? buildPlateCustomWidth
       : preset?.width ?? 220;
-    const plateDepth = state.buildPlatePresetId === 'custom'
-      ? state.buildPlateCustomDepth
+    const plateDepth = buildPlatePresetId === 'custom'
+      ? buildPlateCustomDepth
       : preset?.depth ?? 220;
 
     setSplitExporting(true);

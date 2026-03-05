@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { FrameParams, Unit, ProfilePoint, ConnectorType, SplitInfo, ConnectorSettings } from '../types/frame';
+import type { FrameParams, Unit, ProfilePoint, SplitInfo, ConnectorSettings } from '../types/frame';
 import { defaultPictureSizeId } from '../data/presets';
 import { defaultProfileId } from '../data/profiles';
 

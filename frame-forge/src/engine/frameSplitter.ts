@@ -445,10 +445,7 @@ export function splitFrameForExport(
       bottomSide = bottomSide.translate([-fw, 0, 0]);
       topSide = topSide.translate([fw, 0, 0]);
     } else if (params.stampCornerStyle === 'cyclic') {
-      topSide = topSide.translate([fw / 2, 0, 0]);
-      rightSide = rightSide.translate([0, -fw / 2, 0]);
-      bottomSide = bottomSide.translate([-fw / 2, 0, 0]);
-      leftSide = leftSide.translate([0, fw / 2, 0]);
+      // No additional translation needed for cyclic pinwheel.
     }
   }
 

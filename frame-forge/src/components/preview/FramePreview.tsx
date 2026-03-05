@@ -42,7 +42,15 @@ function FrameMesh() {
   );
 }
 
-function ExplodedPart({ part, gap, allParts }: { part: any, gap: number, allParts: any[] }) {
+interface SplitPartData {
+  name: string;
+  positions: Float32Array;
+  normals: Float32Array;
+  indices: Uint32Array;
+  worldPos?: [number, number, number];
+}
+
+function ExplodedPart({ part, gap, allParts }: { part: SplitPartData, gap: number, allParts: SplitPartData[] }) {
   const geometry = useMemo(() => meshToThreeGeometry(part), [part]);
   
   // Calculate offset based on worldPos and explosion gap

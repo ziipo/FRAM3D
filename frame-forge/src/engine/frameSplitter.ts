@@ -67,8 +67,8 @@ interface SafeZone {
 function findPoleOfInaccessibility(
   safeZoneSection: CrossSection
 ): { centerX: number; centerY: number; maxRadius: number } {
-  const STEP = 1.0;
-  const MIN_AREA = 0.01;
+  const STEP = 0.5; // Smaller step for more precision
+  const MIN_AREA = 0.05;
 
   let current = safeZoneSection.offset(0); // clone
   let maxRadius = 0;
@@ -84,9 +84,40 @@ function findPoleOfInaccessibility(
       break;
     }
     maxRadius += STEP;
-    const b = next.bounds();
-    bestCenterX = (b.min[0] + b.max[0]) / 2;
-    bestCenterY = (b.min[1] + b.max[1]) / 2;
+    
+    // To handle multiple 'blobs' (like in the Step profile where the lip might be a separate island),
+    // we find the largest island and use its center.
+    const islands = next.toPolygons();
+    let largestIslandIdx = 0;
+    let maxIslandArea = -1;
+    
+    if (islands.length > 1) {
+      // Find largest island by simple bounding box area as a proxy
+      for (let i = 0; i < islands.length; i++) {
+        const poly = islands[i];
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const p of poly) {
+          minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]);
+          minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]);
+        }
+        const area = (maxX - minX) * (maxY - minY);
+        if (area > maxIslandArea) {
+          maxIslandArea = area;
+          largestIslandIdx = i;
+        }
+      }
+    }
+
+    const poly = islands[largestIslandIdx];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of poly) {
+      minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]);
+      minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]);
+    }
+    
+    bestCenterX = (minX + maxX) / 2;
+    bestCenterY = (minY + maxY) / 2;
+    
     current.delete();
     current = next;
   }
@@ -222,15 +253,33 @@ function createJoineryBox(
   perpExtent: number,
   zExtent: number,
   perpCenter: number,
-  zCenter: number
+  zCenter: number,
+  rotation?: [number, number, number]
 ): Manifold {
+  let box: Manifold;
   if (splitAxis === 'x') {
-    const box = wasm.Manifold.cube([splitExtent, perpExtent, zExtent], true);
-    return box.translate([cutOffset + splitOffset, perpCenter, zCenter]);
+    box = wasm.Manifold.cube([splitExtent, perpExtent, zExtent], true);
+    // Apply offset along the local axis before rotation
+    if (splitOffset !== 0) {
+      box = box.translate([splitOffset, 0, 0]);
+    }
   } else {
-    const box = wasm.Manifold.cube([perpExtent, splitExtent, zExtent], true);
-    return box.translate([perpCenter, cutOffset + splitOffset, zCenter]);
+    box = wasm.Manifold.cube([perpExtent, splitExtent, zExtent], true);
+    if (splitOffset !== 0) {
+      box = box.translate([0, splitOffset, 0]);
+    }
   }
+
+  if (rotation) {
+    box = box.rotate(rotation);
+  }
+
+  // Final world-space placement
+  return box.translate([
+    splitAxis === 'x' ? cutOffset : perpCenter,
+    splitAxis === 'y' ? cutOffset : perpCenter,
+    zCenter
+  ]);
 }
 
 // --- Floating tenon ---
@@ -252,14 +301,16 @@ function applyFloatingTenon(
   originalSection: CrossSection | null,
   shrunkSection: CrossSection | null,
   diagnosticSvgs: DiagnosticSvg[],
-  diagnosticName: string
+  diagnosticName: string,
+  rotation?: [number, number, number]
 ): FloatingTenonResult {
-  const { tenonLength, toleranceXY, toleranceZ, fillFraction } = settings;
+  const { tenonLength, toleranceXY, toleranceZ } = settings;
 
-  const maxMortiseSide = safeZone.maxRadius * Math.SQRT2;
-  const maxTenonSide = maxMortiseSide - 2 * toleranceXY;
-  const tenonW = Math.min(safeZone.safeWidth * fillFraction, maxTenonSide);
-  const tenonH = Math.min(safeZone.safeHeight * fillFraction, maxTenonSide);
+  // Option 2 (Revised): Use a safer scaling factor (1.15x instead of 1.4x)
+  // to ensure corners of the square don't poke through curved surfaces.
+  const squareSide = safeZone.maxRadius * 1.15;
+  const tenonW = squareSide - 2 * toleranceXY;
+  const tenonH = squareSide - 2 * toleranceXY;
 
   const mortiseW = tenonW + 2 * toleranceXY;
   const mortiseH = tenonH + 2 * toleranceXY;
@@ -269,7 +320,8 @@ function applyFloatingTenon(
   const mortise = createJoineryBox(
     wasm, splitAxis, cutOffset, 0,
     totalMortiseLen, mortiseW, mortiseH,
-    safeZone.perpCenter, safeZone.zCenter
+    safeZone.perpCenter, safeZone.zCenter,
+    rotation
   );
 
   const result = wasm.Manifold.difference(piece, mortise);
@@ -288,11 +340,19 @@ function applyFloatingTenon(
   if (generateTenon) {
     if (splitAxis === 'x') {
       tenon = wasm.Manifold.cube([tenonLength, tenonW, tenonH], true);
-      tenonWorldPos = [cutOffset, safeZone.perpCenter, safeZone.zCenter];
     } else {
       tenon = wasm.Manifold.cube([tenonW, tenonLength, tenonH], true);
-      tenonWorldPos = [safeZone.perpCenter, cutOffset, safeZone.zCenter];
     }
+    
+    if (rotation) {
+      tenon = tenon.rotate(rotation);
+    }
+    // Final world translation for the tenon
+    tenonWorldPos = [
+      splitAxis === 'x' ? cutOffset : safeZone.perpCenter,
+      splitAxis === 'y' ? cutOffset : safeZone.perpCenter,
+      safeZone.zCenter
+    ];
   }
 
   return { piece: result, tenon, tenonWorldPos };
@@ -312,23 +372,26 @@ function applyTongueGroove(
   originalSection: CrossSection | null,
   shrunkSection: CrossSection | null,
   diagnosticSvgs: DiagnosticSvg[],
-  diagnosticName: string
+  diagnosticName: string,
+  rotation?: [number, number, number]
 ): Manifold {
-  const { tongueLength, toleranceXY, toleranceZ, fillFraction } = settings;
+  const { tongueLength, toleranceXY, toleranceZ } = settings;
 
-  const maxGrooveSide = safeZone.maxRadius * Math.SQRT2;
-  const maxTongueSide = maxGrooveSide - 2 * toleranceXY;
-  const tongueW = Math.min(safeZone.safeWidth * fillFraction, maxTongueSide);
-  const tongueH = Math.min(safeZone.safeHeight * fillFraction, maxTongueSide);
+  // Option 2 (Revised): Safer scaling factor.
+  const squareSide = safeZone.maxRadius * 1.15;
+  const tongueW = squareSide - 2 * toleranceXY;
+  const tongueH = squareSide - 2 * toleranceXY;
 
   if (side === 'tongue') {
     const overlap = 1;
     const totalLen = tongueLength + overlap;
     const splitOffset = direction === 1 ? (totalLen / 2 - overlap) : -(totalLen / 2 - overlap);
+    
     const tongueBox = createJoineryBox(
       wasm, splitAxis, cutOffset, splitOffset,
       totalLen, tongueW, tongueH,
-      safeZone.perpCenter, safeZone.zCenter
+      safeZone.perpCenter, safeZone.zCenter,
+      rotation
     );
 
     const result = wasm.Manifold.union(piece, tongueBox);
@@ -355,7 +418,8 @@ function applyTongueGroove(
     const grooveBox = createJoineryBox(
       wasm, splitAxis, cutOffset, splitOffset,
       totalLen, grooveW, grooveH,
-      safeZone.perpCenter, safeZone.zCenter
+      safeZone.perpCenter, safeZone.zCenter,
+      rotation
     );
 
     const result = wasm.Manifold.difference(piece, grooveBox);
@@ -576,6 +640,62 @@ export function splitFrameForExport(
         szBL.shrunkSection.delete();
       }
     }
+  } else if (params.frameStyle !== 'stamp' && connector.type !== 'none') {
+    // Mitered corner joinery
+    const wallThickness = connector.type === 'floating-tenon' ? connector.floatingTenon.wallThickness : connector.tongueGroove.wallThickness;
+    const fw = params.frameWidth;
+    
+    // BL Corner: bottom meets left
+    const resBL = computeSafeZone(crossSection, wallThickness, 'bottom', params, dims);
+    if (resBL) {
+      const { safeZone, shrunkSection } = resBL;
+      const distFromOuter = fw - safeZone.buildCenterX;
+      const cornerX = -dims.outerWidth / 2 + distFromOuter;
+      const cornerY = -dims.outerHeight / 2 + distFromOuter;
+      // Normal from Bottom towards Left is Up-Left: (-1, 1) -> 135 degrees
+      const [b1, l1] = applyMiterJoinery(wasm, bottomSide, leftSide, cornerX, cornerY, [0, 0, 135], safeZone, connector, crossSection, shrunkSection, diagnosticSvgs, 'miter-bl', tenonParts);
+      bottomSide.delete(); leftSide.delete(); bottomSide = b1; leftSide = l1;
+      shrunkSection.delete();
+    }
+
+    // BR Corner: bottom meets right
+    const resBR = computeSafeZone(crossSection, wallThickness, 'bottom', params, dims);
+    if (resBR) {
+      const { safeZone, shrunkSection } = resBR;
+      const distFromOuter = fw - safeZone.buildCenterX;
+      const cornerX = dims.outerWidth / 2 - distFromOuter;
+      const cornerY = -dims.outerHeight / 2 + distFromOuter;
+      // Normal from Bottom towards Right is Up-Right: (1, 1) -> 45 degrees
+      const [b2, r1] = applyMiterJoinery(wasm, bottomSide, rightSide, cornerX, cornerY, [0, 0, 45], safeZone, connector, crossSection, shrunkSection, diagnosticSvgs, 'miter-br', tenonParts);
+      bottomSide.delete(); rightSide.delete(); bottomSide = b2; rightSide = r1;
+      shrunkSection.delete();
+    }
+
+    // TR Corner: top meets right
+    const resTR = computeSafeZone(crossSection, wallThickness, 'top', params, dims);
+    if (resTR) {
+      const { safeZone, shrunkSection } = resTR;
+      const distFromOuter = fw - safeZone.buildCenterX;
+      const cornerX = dims.outerWidth / 2 - distFromOuter;
+      const cornerY = dims.outerHeight / 2 - distFromOuter;
+      // Normal from Top towards Right is Down-Right: (1, -1) -> -45 degrees
+      const [t1, r2] = applyMiterJoinery(wasm, topSide, rightSide, cornerX, cornerY, [0, 0, -45], safeZone, connector, crossSection, shrunkSection, diagnosticSvgs, 'miter-tr', tenonParts);
+      topSide.delete(); rightSide.delete(); topSide = t1; rightSide = r2;
+      shrunkSection.delete();
+    }
+
+    // TL Corner: top meets left
+    const resTL = computeSafeZone(crossSection, wallThickness, 'top', params, dims);
+    if (resTL) {
+      const { safeZone, shrunkSection } = resTL;
+      const distFromOuter = fw - safeZone.buildCenterX;
+      const cornerX = -dims.outerWidth / 2 + distFromOuter;
+      const cornerY = dims.outerHeight / 2 - distFromOuter;
+      // Normal from Top towards Left is Down-Left: (-1, -1) -> -135 degrees
+      const [t2, l2] = applyMiterJoinery(wasm, topSide, leftSide, cornerX, cornerY, [0, 0, -135], safeZone, connector, crossSection, shrunkSection, diagnosticSvgs, 'miter-tl', tenonParts);
+      topSide.delete(); leftSide.delete(); topSide = t2; leftSide = l2;
+      shrunkSection.delete();
+    }
   }
 
   processSide(wasm, bottomSide, 'bottom', plan.bottom, 'x',
@@ -656,6 +776,73 @@ function applyCornerJoinery(
     const resB = applyTongueGroove(
       wasm, wasm.Manifold.union([pieceB]), 'groove', splitAxis, cutOffset, direction,
       safeZone, connector.tongueGroove, null, null, [], ''
+    );
+    
+    return [resA, resB];
+  }
+  return [wasm.Manifold.union([pieceA]), wasm.Manifold.union([pieceB])];
+}
+
+/**
+ * Apply joinery between two mitered corner segments.
+ */
+function applyMiterJoinery(
+  wasm: ManifoldToplevel,
+  pieceA: Manifold,
+  pieceB: Manifold,
+  cornerX: number,
+  cornerY: number,
+  rotation: [number, number, number],
+  safeZone: SafeZone,
+  connector: ConnectorSettings,
+  crossSection: CrossSection,
+  shrunkSection: CrossSection,
+  diagnosticSvgs: DiagnosticSvg[],
+  diagName: string,
+  tenonParts: SplitPart[]
+): [Manifold, Manifold] {
+  // For miters, we use 'x' as splitAxis arbitrarily since we'll rotate the box.
+  const splitAxis = 'x';
+  const cutOffset = cornerX;
+  const miterSafeZone = {
+    ...safeZone,
+    perpCenter: cornerY, // In 'x' split, perp is Y.
+  };
+
+  if (connector.type === 'floating-tenon') {
+    const { piece: resA, tenon, tenonWorldPos } = applyFloatingTenon(
+      wasm, wasm.Manifold.union([pieceA]), splitAxis, cutOffset, miterSafeZone,
+      connector.floatingTenon, true,
+      crossSection, shrunkSection, diagnosticSvgs, diagName,
+      rotation
+    );
+    
+    if (tenon && tenonWorldPos) {
+      tenonParts.push({ name: `tenon-${diagName}.stl`, manifold: tenon, worldPos: tenonWorldPos });
+    }
+    
+    const { piece: resB } = applyFloatingTenon(
+      wasm, wasm.Manifold.union([pieceB]), splitAxis, cutOffset, miterSafeZone,
+      connector.floatingTenon, false, null, null, [], '',
+      rotation
+    );
+    
+    return [resA, resB];
+    
+  } else if (connector.type === 'tongue-groove') {
+    // For miters, direction depends on the corner. 
+    // We'll just pick 1 for now and let the rotation handle it.
+    // pieceA (e.g. bottom) gets tongue, pieceB (e.g. left) gets groove.
+    const resA = applyTongueGroove(
+      wasm, wasm.Manifold.union([pieceA]), 'tongue', splitAxis, cutOffset, 1,
+      miterSafeZone, connector.tongueGroove, crossSection, shrunkSection, diagnosticSvgs, diagName,
+      rotation
+    );
+    
+    const resB = applyTongueGroove(
+      wasm, wasm.Manifold.union([pieceB]), 'groove', splitAxis, cutOffset, 1,
+      miterSafeZone, connector.tongueGroove, null, null, [], '',
+      rotation
     );
     
     return [resA, resB];

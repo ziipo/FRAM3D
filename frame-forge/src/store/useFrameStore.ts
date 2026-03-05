@@ -97,14 +97,14 @@ const defaultParams: FrameParams = {
   connector: {
     type: 'none',
     floatingTenon: {
-      tenonLength: 15,
+      tenonLength: 8,
       wallThickness: 2,
       toleranceXY: 0.2,
       toleranceZ: 0.5,
       fillFraction: 0.8,
     },
     tongueGroove: {
-      tongueLength: 10,
+      tongueLength: 4,
       wallThickness: 2,
       toleranceXY: 0.2,
       toleranceZ: 0.5,

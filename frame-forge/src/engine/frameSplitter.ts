@@ -444,6 +444,11 @@ export function splitFrameForExport(
     } else if (params.stampCornerStyle === 'butt-v') {
       bottomSide = bottomSide.translate([-fw, 0, 0]);
       topSide = topSide.translate([fw, 0, 0]);
+    } else if (params.stampCornerStyle === 'cyclic') {
+      topSide = topSide.translate([fw / 2, 0, 0]);
+      rightSide = rightSide.translate([0, -fw / 2, 0]);
+      bottomSide = bottomSide.translate([-fw / 2, 0, 0]);
+      leftSide = leftSide.translate([0, fw / 2, 0]);
     }
   }
 
@@ -506,6 +511,8 @@ export function splitFrameForExport(
         // tr - top cap gets tongue pointing DOWN (-y) into right side
         const [t2, r2] = applyCornerJoinery(wasm, topSide, rightSide, 'y', dims.innerHeight / 2, false, { ...safeZone, perpCenter: brX }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-tr', tenonParts);
         topSide.delete(); rightSide.delete(); topSide = t2; rightSide = r2;
+
+        shrunkSection.delete();
       }
     } else if (params.stampCornerStyle === 'butt-v') {
       const wallThickness = connector.type === 'floating-tenon' ? connector.floatingTenon.wallThickness : connector.tongueGroove.wallThickness;
@@ -530,6 +537,46 @@ export function splitFrameForExport(
         // br - right cap gets tongue pointing LEFT (-x) into bottom side
         const [r2, b2] = applyCornerJoinery(wasm, rightSide, bottomSide, 'x', dims.innerWidth / 2, false, { ...safeZone, perpCenter: blY }, connector, crossSection, shrunkSection, diagnosticSvgs, 'corner-br', tenonParts);
         rightSide.delete(); bottomSide.delete(); rightSide = r2; bottomSide = b2;
+
+        shrunkSection.delete();
+      }
+    } else if (params.stampCornerStyle === 'cyclic') {
+      const wallThickness = connector.type === 'floating-tenon' ? connector.floatingTenon.wallThickness : connector.tongueGroove.wallThickness;
+      
+      // BR corner: cut piece is rightSide, flush piece is bottomSide. Split = y, cut = -innerHeight/2
+      // rightSide connects on LOW y-face -> tongue points DOWN (-y) -> true
+      const szBR = computeSafeZone(crossSection, wallThickness, 'right', params, dims);
+      if (szBR) {
+        const [r1, b1] = applyCornerJoinery(wasm, rightSide, bottomSide, 'y', -dims.innerHeight / 2, true, szBR.safeZone, connector, crossSection, szBR.shrunkSection, diagnosticSvgs, 'corner-br', tenonParts);
+        rightSide.delete(); bottomSide.delete(); rightSide = r1; bottomSide = b1;
+        szBR.shrunkSection.delete();
+      }
+
+      // TR corner: cut piece is topSide, flush piece is rightSide. Split = x, cut = innerWidth/2
+      // topSide connects on HIGH x-face -> tongue points RIGHT (+x) -> false
+      const szTR = computeSafeZone(crossSection, wallThickness, 'top', params, dims);
+      if (szTR) {
+        const [t1, r2] = applyCornerJoinery(wasm, topSide, rightSide, 'x', dims.innerWidth / 2, false, szTR.safeZone, connector, crossSection, szTR.shrunkSection, diagnosticSvgs, 'corner-tr', tenonParts);
+        topSide.delete(); rightSide.delete(); topSide = t1; rightSide = r2;
+        szTR.shrunkSection.delete();
+      }
+
+      // TL corner: cut piece is leftSide, flush piece is topSide. Split = y, cut = innerHeight/2
+      // leftSide connects on HIGH y-face -> tongue points UP (+y) -> false
+      const szTL = computeSafeZone(crossSection, wallThickness, 'left', params, dims);
+      if (szTL) {
+        const [l1, t2] = applyCornerJoinery(wasm, leftSide, topSide, 'y', dims.innerHeight / 2, false, szTL.safeZone, connector, crossSection, szTL.shrunkSection, diagnosticSvgs, 'corner-tl', tenonParts);
+        leftSide.delete(); topSide.delete(); leftSide = l1; topSide = t2;
+        szTL.shrunkSection.delete();
+      }
+
+      // BL corner: cut piece is bottomSide, flush piece is leftSide. Split = x, cut = -innerWidth/2
+      // bottomSide connects on LOW x-face -> tongue points LEFT (-x) -> true
+      const szBL = computeSafeZone(crossSection, wallThickness, 'bottom', params, dims);
+      if (szBL) {
+        const [b2, l2] = applyCornerJoinery(wasm, bottomSide, leftSide, 'x', -dims.innerWidth / 2, true, szBL.safeZone, connector, crossSection, szBL.shrunkSection, diagnosticSvgs, 'corner-bl', tenonParts);
+        bottomSide.delete(); leftSide.delete(); bottomSide = b2; leftSide = l2;
+        szBL.shrunkSection.delete();
       }
     }
   }

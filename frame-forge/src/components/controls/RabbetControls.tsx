@@ -21,15 +21,15 @@ export function RabbetControls() {
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-[var(--fg-muted)]">
         The rabbet is the ledge that holds your picture, glass, and backing.
       </p>
 
       {/* Rabbet Width */}
       <div>
         <div className="flex justify-between text-xs mb-1">
-          <label className="text-neutral-400">Rabbet Width</label>
-          <span className="text-neutral-300">
+          <label className="text-[var(--fg-muted)]">Rabbet Width</label>
+          <span className="text-[var(--fg-main)]">
             {displayRabbetWidth.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -43,15 +43,15 @@ export function RabbetControls() {
           min={minRabbet}
           max={maxRabbetWidth}
           step={step}
-          className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
         />
       </div>
 
       {/* Rabbet Depth */}
       <div>
         <div className="flex justify-between text-xs mb-1">
-          <label className="text-neutral-400">Rabbet Depth</label>
-          <span className="text-neutral-300">
+          <label className="text-[var(--fg-muted)]">Rabbet Depth</label>
+          <span className="text-[var(--fg-main)]">
             {displayRabbetDepth.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -65,15 +65,15 @@ export function RabbetControls() {
           min={minRabbet}
           max={maxRabbetDepth}
           step={step}
-          className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
         />
       </div>
 
       {/* Tolerance */}
       <div>
         <div className="flex justify-between text-xs mb-1">
-          <label className="text-neutral-400">Tolerance (clearance)</label>
-          <span className="text-neutral-300">
+          <label className="text-[var(--fg-muted)]">Tolerance (clearance)</label>
+          <span className="text-[var(--fg-main)]">
             {displayTolerance.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -87,9 +87,9 @@ export function RabbetControls() {
           min={minTolerance}
           max={maxTolerance}
           step={step}
-          className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
         />
-        <p className="text-xs text-neutral-500 mt-1">
+        <p className="text-xs text-[var(--fg-muted)] mt-1">
           Extra space around the picture for easy insertion.
         </p>
       </div>

@@ -9,25 +9,27 @@ export function ProfileSelector() {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
-        {frameProfiles.map((profile) => (
-          <button
-            key={profile.id}
-            onClick={() => setParam('profileId', profile.id)}
-            className={`p-2 rounded border transition-colors text-left ${
-              profileId === profile.id
-                ? 'border-blue-500 bg-blue-500/20'
-                : 'border-neutral-600 bg-neutral-700/50 hover:border-neutral-500'
-            }`}
-          >
-            {/* Profile thumbnail - SVG preview */}
-            <div className="h-8 mb-1 flex items-center justify-center">
-              <ProfileThumbnail profile={profile} />
-            </div>
-            <div className="text-xs text-white font-medium truncate">
-              {profile.name}
-            </div>
-          </button>
-        ))}
+        {frameProfiles.map((profile) => {
+          const isActive = profileId === profile.id;
+          return (
+            <button
+              key={profile.id}
+              onClick={() => setParam('profileId', profile.id)}
+              className={`p-2 rounded border transition-colors text-left ${
+                isActive
+                  ? 'border-blue-500 bg-blue-500/20'
+                  : 'border-[var(--border-input)] bg-[var(--bg-input)] hover:border-[var(--fg-muted)]'
+              }`}
+            >
+              <div className="h-12 mb-2 flex items-center justify-center bg-[var(--bg-sidebar)] rounded border border-[var(--border-main)]">
+                <ProfileThumbnail profile={profile} />
+              </div>
+              <div className="text-[10px] text-[var(--fg-main)] font-medium truncate">
+                {profile.name}
+              </div>
+            </button>
+          );
+        })}
 
         {/* Custom profile button */}
         <button
@@ -35,13 +37,13 @@ export function ProfileSelector() {
           className={`p-2 rounded border transition-colors text-left ${
             profileId === 'custom'
               ? 'border-blue-500 bg-blue-500/20'
-              : 'border-neutral-600 bg-neutral-700/50 hover:border-neutral-500'
+              : 'border-[var(--border-input)] bg-[var(--bg-input)] hover:border-[var(--fg-muted)]'
           }`}
         >
-          <div className="h-8 mb-1 flex items-center justify-center">
+          <div className="h-12 mb-2 flex items-center justify-center bg-[var(--bg-sidebar)] rounded border border-[var(--border-main)]">
             <CustomProfileIcon />
           </div>
-          <div className="text-xs text-white font-medium truncate">
+          <div className="text-[10px] text-[var(--fg-main)] font-medium truncate">
             Custom
           </div>
         </button>
@@ -67,7 +69,7 @@ function ProfileThumbnail({ profile }: { profile: typeof frameProfiles[0] }) {
     .join(' ') + ' Z';
 
   return (
-    <svg width={width} height={height} className="text-neutral-300">
+    <svg width={width} height={height} className="text-[var(--fg-main)] opacity-80">
       <path
         d={pathData}
         fill="currentColor"
@@ -81,7 +83,7 @@ function ProfileThumbnail({ profile }: { profile: typeof frameProfiles[0] }) {
 
 function CustomProfileIcon() {
   return (
-    <svg width={60} height={24} className="text-neutral-300">
+    <svg width={60} height={24} className="text-[var(--fg-main)] opacity-80">
       {/* Dotted line with points */}
       <line
         x1={4}

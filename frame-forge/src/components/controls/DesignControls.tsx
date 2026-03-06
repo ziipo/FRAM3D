@@ -92,13 +92,13 @@ export function DesignControls() {
   return (
     <div className="space-y-4">
       {/* Style Toggle */}
-      <div className="flex flex-col bg-neutral-700/50 p-1 rounded-lg gap-1">
+      <div className="flex flex-col bg-[var(--bg-input)] p-1 rounded-lg gap-1">
         <button
           onClick={() => setParam('frameStyle', 'profile')}
           className={`w-full py-1.5 text-xs font-medium rounded-md transition-colors ${
             frameStyle === 'profile'
               ? 'bg-blue-500 text-white shadow'
-              : 'text-neutral-400 hover:text-white'
+              : 'text-[var(--fg-muted)] hover:text-[var(--fg-main)]'
           }`}
         >
           Extruded Profile
@@ -108,7 +108,7 @@ export function DesignControls() {
           className={`w-full py-1.5 text-xs font-medium rounded-md transition-colors ${
             frameStyle === 'stamp'
               ? 'bg-blue-500 text-white shadow'
-              : 'text-neutral-400 hover:text-white'
+              : 'text-[var(--fg-muted)] hover:text-[var(--fg-main)]'
           }`}
         >
           Stamped Pattern
@@ -118,7 +118,7 @@ export function DesignControls() {
           className={`w-full py-1.5 text-xs font-medium rounded-md transition-colors ${
             frameStyle === 'texture'
               ? 'bg-blue-500 text-white shadow'
-              : 'text-neutral-400 hover:text-white'
+              : 'text-[var(--fg-muted)] hover:text-[var(--fg-main)]'
           }`}
         >
           Seamless Texture
@@ -130,11 +130,11 @@ export function DesignControls() {
       ) : frameStyle === 'stamp' ? (
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="block text-xs text-neutral-400">Stamp Shape</label>
+            <label className="block text-xs text-[var(--fg-muted)]">Stamp Shape</label>
             <select
               value={stampType}
               onChange={(e) => setParam('stampType', e.target.value)}
-              className="w-full bg-neutral-700 border border-neutral-600 rounded p-1.5 text-sm text-white"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded p-1.5 text-sm text-[var(--fg-main)]"
             >
               <option value="dots">Dots</option>
               <option value="chevrons">Chevrons</option>
@@ -146,9 +146,9 @@ export function DesignControls() {
           </div>
 
           {stampType === 'custom' && (
-            <div className="space-y-3 bg-neutral-800 p-3 rounded-lg border border-neutral-700">
+            <div className="space-y-3 bg-[var(--bg-sidebar)] p-3 rounded-lg border border-[var(--border-main)] shadow-sm">
               <div className="flex justify-between items-center">
-                <label className="block text-xs text-neutral-400">Custom Stamp</label>
+                <label className="block text-xs text-[var(--fg-muted)]">Custom Stamp</label>
                 {isProcessingCustomStamp && (
                   <div className="flex items-center gap-1.5 text-[10px] text-blue-400">
                     <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin" />
@@ -163,15 +163,15 @@ export function DesignControls() {
                   accept="image/*"
                   onChange={handleImageUpload}
                   disabled={isProcessingCustomStamp}
-                  className="w-full text-xs text-neutral-300 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-blue-500 file:text-white hover:file:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-xs text-[var(--fg-main)] file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-blue-500 file:text-white hover:file:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
 
               {/* Stamp Size */}
               <div>
                 <div className="flex justify-between text-[10px] mb-1">
-                  <label className="text-neutral-400">Scale</label>
-                  <span className="text-neutral-300">{Math.round(stampSize * 100)}%</span>
+                  <label className="text-[var(--fg-muted)]">Scale</label>
+                  <span className="text-[var(--fg-main)]">{Math.round(stampSize * 100)}%</span>
                 </div>
                 <input
                   type="range"
@@ -180,15 +180,15 @@ export function DesignControls() {
                   min={0.1}
                   max={2.0}
                   step={0.05}
-                  className="w-full h-1.5 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-1.5 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
               </div>
 
               {/* Stamp Rotation */}
               <div>
                 <div className="flex justify-between text-[10px] mb-1">
-                  <label className="text-neutral-400">Rotation</label>
-                  <span className="text-neutral-300">{stampRotation}°</span>
+                  <label className="text-[var(--fg-muted)]">Rotation</label>
+                  <span className="text-[var(--fg-main)]">{stampRotation}°</span>
                 </div>
                 <input
                   type="range"
@@ -197,22 +197,22 @@ export function DesignControls() {
                   min={-180}
                   max={180}
                   step={5}
-                  className="w-full h-1.5 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-1.5 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
               </div>
 
-              <p className="text-[10px] text-neutral-500 mt-1">
+              <p className="text-[10px] text-[var(--fg-muted)] mt-1 opacity-80">
                 For best results, upload a high-contrast black and white image. Dark areas will be stamped out.
               </p>
             </div>
           )}
 
           <div className="space-y-2">
-            <label className="block text-xs text-neutral-400">Pattern Layout</label>
+            <label className="block text-xs text-[var(--fg-muted)]">Pattern Layout</label>
             <select
               value={stampPattern}
               onChange={(e) => setParam('stampPattern', e.target.value as 'repeating' | 'alternating')}
-              className="w-full bg-neutral-700 border border-neutral-600 rounded p-1.5 text-sm text-white"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded p-1.5 text-sm text-[var(--fg-main)]"
             >
               <option value="repeating">Repeating</option>
               <option value="alternating">Alternating</option>
@@ -220,11 +220,11 @@ export function DesignControls() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-xs text-neutral-400">Corner Joints</label>
+            <label className="block text-xs text-[var(--fg-muted)]">Corner Joints</label>
             <select
               value={stampCornerStyle}
               onChange={(e) => setParam('stampCornerStyle', e.target.value as 'butt-h' | 'butt-v' | 'cyclic')}
-              className="w-full bg-neutral-700 border border-neutral-600 rounded p-1.5 text-sm text-white"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded p-1.5 text-sm text-[var(--fg-main)]"
             >
               <option value="butt-h">Butt (Top/Bottom overlap)</option>
               <option value="butt-v">Butt (Left/Right overlap)</option>
@@ -235,8 +235,8 @@ export function DesignControls() {
           {/* Stamp Spacing */}
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <label className="text-neutral-400">Spacing</label>
-              <span className="text-neutral-300">{stampSpacing} mm</span>
+              <label className="text-[var(--fg-muted)]">Spacing</label>
+              <span className="text-[var(--fg-main)]">{stampSpacing} mm</span>
             </div>
             <input
               type="range"
@@ -245,15 +245,15 @@ export function DesignControls() {
               min={2}
               max={50}
               step={1}
-              className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
             />
           </div>
 
           {/* Stamp Depth */}
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <label className="text-neutral-400">Stamp Depth</label>
-              <span className="text-neutral-300">{stampDepth} mm</span>
+              <label className="text-[var(--fg-muted)]">Stamp Depth</label>
+              <span className="text-[var(--fg-main)]">{stampDepth} mm</span>
             </div>
             <input
               type="range"
@@ -262,7 +262,7 @@ export function DesignControls() {
               min={0.5}
               max={10}
               step={0.5}
-              className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
             />
           </div>
         </div>
@@ -284,7 +284,7 @@ function TextureControls() {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="block text-xs text-neutral-400">Texture Pattern</label>
+        <label className="block text-xs text-[var(--fg-muted)]">Texture Pattern</label>
         <select
           value={textureType}
           onChange={(e) => {
@@ -293,7 +293,7 @@ function TextureControls() {
             if (val === 'd-stripes') setParam('textureRotation', 25);
             if (val === 'v-stripes') setParam('textureRotation', 0);
           }}
-          className="w-full bg-neutral-700 border border-neutral-600 rounded p-1.5 text-sm text-white"
+          className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded p-1.5 text-sm text-[var(--fg-main)]"
         >
           <option value="circles">Concentric Circles</option>
           <option value="v-stripes">Vertical Stripes</option>
@@ -302,11 +302,11 @@ function TextureControls() {
       </div>
 
       <div className="space-y-2">
-        <label className="block text-xs text-neutral-400">Corner Joints</label>
+        <label className="block text-xs text-[var(--fg-muted)]">Corner Joints</label>
         <select
           value={stampCornerStyle}
           onChange={(e) => setParam('stampCornerStyle', e.target.value as 'butt-h' | 'butt-v' | 'cyclic')}
-          className="w-full bg-neutral-700 border border-neutral-600 rounded p-1.5 text-sm text-white"
+          className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded p-1.5 text-sm text-[var(--fg-main)]"
         >
           <option value="butt-h">Butt (Top/Bottom overlap)</option>
           <option value="butt-v">Butt (Left/Right overlap)</option>
@@ -317,8 +317,8 @@ function TextureControls() {
       {/* Texture Spacing */}
       <div>
         <div className="flex justify-between text-xs mb-1">
-          <label className="text-neutral-400">Frequency / Spacing</label>
-          <span className="text-neutral-300">{textureSpacing} mm</span>
+          <label className="text-[var(--fg-muted)]">Frequency / Spacing</label>
+          <span className="text-[var(--fg-main)]">{textureSpacing} mm</span>
         </div>
         <input
           type="range"
@@ -327,7 +327,7 @@ function TextureControls() {
           min={2}
           max={50}
           step={1}
-          className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
         />
       </div>
 
@@ -335,8 +335,8 @@ function TextureControls() {
       {(textureType === 'v-stripes' || textureType === 'd-stripes') && (
         <div>
           <div className="flex justify-between text-xs mb-1">
-            <label className="text-neutral-400">Rotation</label>
-            <span className="text-neutral-300">{textureRotation}°</span>
+            <label className="text-[var(--fg-muted)]">Rotation</label>
+            <span className="text-[var(--fg-main)]">{textureRotation}°</span>
           </div>
           <input
             type="range"
@@ -345,7 +345,7 @@ function TextureControls() {
             min={-180}
             max={180}
             step={5}
-            className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
           />
         </div>
       )}
@@ -353,8 +353,8 @@ function TextureControls() {
       {/* Texture Depth */}
       <div>
         <div className="flex justify-between text-xs mb-1">
-          <label className="text-neutral-400">Texture Depth</label>
-          <span className="text-neutral-300">{textureDepth} mm</span>
+          <label className="text-[var(--fg-muted)]">Texture Depth</label>
+          <span className="text-[var(--fg-main)]">{textureDepth} mm</span>
         </div>
         <input
           type="range"
@@ -363,7 +363,7 @@ function TextureControls() {
           min={0.5}
           max={10}
           step={0.5}
-          className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
         />
       </div>
     </div>

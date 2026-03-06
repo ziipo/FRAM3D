@@ -159,7 +159,7 @@ function ResetViewButton() {
   return (
     <button
       onClick={requestResetView}
-      className="absolute bottom-4 right-4 bg-neutral-800/80 hover:bg-neutral-700 text-white p-2 rounded-full shadow-lg transition-colors z-20"
+      className="absolute bottom-4 right-4 bg-[var(--bg-sidebar)] border border-[var(--border-main)] hover:bg-[var(--bg-app)] text-[var(--fg-main)] p-2 rounded-full shadow-lg transition-colors z-20"
       title="Reset View"
     >
       <svg
@@ -180,19 +180,25 @@ function ResetViewButton() {
 }
 
 function Scene() {
+  const theme = useFrameStore((s) => s.theme);
+  const bgColor = theme === 'dark' ? '#121212' : '#f5f5f5';
+  const gridColor = theme === 'dark' ? '#404040' : '#cccccc';
+  const sectionColor = theme === 'dark' ? '#505050' : '#aaaaaa';
+
   return (
     <>
+      <color attach="background" args={[bgColor]} />
       {/* Lighting */}
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={theme === 'dark' ? 0.4 : 0.7} />
       <directionalLight
         position={[10, 20, 10]}
-        intensity={1}
+        intensity={theme === 'dark' ? 1 : 1.2}
         castShadow
         shadow-mapSize={[2048, 2048]}
       />
       <directionalLight
         position={[-10, 10, -10]}
-        intensity={0.3}
+        intensity={theme === 'dark' ? 0.3 : 0.5}
       />
 
       {/* Grid for scale reference */}
@@ -200,10 +206,10 @@ function Scene() {
         args={[300, 300]}
         cellSize={10}
         cellThickness={0.5}
-        cellColor="#404040"
+        cellColor={gridColor}
         sectionSize={50}
         sectionThickness={1}
-        sectionColor="#505050"
+        sectionColor={sectionColor}
         fadeDistance={400}
         fadeStrength={1}
         followCamera={false}
@@ -238,13 +244,13 @@ function LoadingOverlay() {
   if (!isGenerating) return null;
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-      <div className="bg-neutral-800 rounded-lg p-6 shadow-xl">
+    <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px] z-10">
+      <div className="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-lg p-6 shadow-xl">
         <div className="flex items-center gap-3">
           <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
           <div>
-            <div className="text-white font-medium">{progressStage || 'Generating...'}</div>
-            <div className="text-neutral-400 text-sm">{progress}%</div>
+            <div className="text-[var(--fg-main)] font-medium">{progressStage || 'Generating...'}</div>
+            <div className="text-[var(--fg-muted)] text-sm">{progress}%</div>
           </div>
         </div>
       </div>

@@ -51,8 +51,10 @@ interface FrameState extends FrameParams {
   // View reset state
   resetView: number;
   explosionGap: number;
+  theme: 'light' | 'dark';
 
   // Actions
+  setTheme: (theme: 'light' | 'dark') => void;
   setParam: <K extends keyof FrameParams>(key: K, value: FrameParams[K]) => void;
   setParams: (params: Partial<FrameParams>) => void;
   setConnector: (connector: Partial<ConnectorSettings>) => void;
@@ -72,7 +74,7 @@ interface FrameState extends FrameParams {
   setSplitExporting: (exporting: boolean) => void;
   setSplitExportResult: (zipData: ArrayBuffer, format: 'stl' | '3mf', info: SplitInfo) => void;
   clearSplitExport: () => void;
-  setTriggerSplitExport: (fn: (() => void) | null) => void;
+  setTriggerSplitExport: (fn: ((format: 'stl' | '3mf') => void) | null) => void;
   requestResetView: () => void;
   resetToDefaults: () => void;
 }
@@ -169,8 +171,11 @@ export const useFrameStore = create<FrameState>((set) => ({
   // View reset state
   resetView: 0,
   explosionGap: 0,
+  theme: 'dark',
 
   // Actions
+  setTheme: (theme) => set({ theme }),
+
   setParam: (key, value) =>
     set((state) => ({
       ...state,
@@ -274,6 +279,7 @@ export const useFrameStore = create<FrameState>((set) => ({
       isSplitExporting: false,
       resetView: 0,
       explosionGap: 0,
+      theme: 'dark',
     }),
 }));
 

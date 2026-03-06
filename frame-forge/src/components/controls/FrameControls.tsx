@@ -33,8 +33,8 @@ export function FrameControls() {
       {/* Frame Width */}
       <div>
         <div className="flex justify-between text-xs mb-1">
-          <label className="text-neutral-400">Frame Width</label>
-          <span className="text-neutral-300">
+          <label className="text-[var(--fg-muted)]">Frame Width</label>
+          <span className="text-[var(--fg-main)]">
             {displayFrameWidth.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -50,9 +50,9 @@ export function FrameControls() {
           min={minWidth}
           max={maxWidth}
           step={step}
-          className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
         />
-        <div className="flex justify-between text-xs text-neutral-500 mt-0.5">
+        <div className="flex justify-between text-xs text-[var(--fg-muted)] mt-0.5">
           <span>{minWidth.toFixed(displayUnit === 'in' ? 1 : 0)}</span>
           <span>{maxWidth.toFixed(displayUnit === 'in' ? 0 : 0)}</span>
         </div>
@@ -61,8 +61,8 @@ export function FrameControls() {
       {/* Frame Depth */}
       <div>
         <div className="flex justify-between text-xs mb-1">
-          <label className="text-neutral-400">Frame Depth</label>
-          <span className="text-neutral-300">
+          <label className="text-[var(--fg-muted)]">Frame Depth</label>
+          <span className="text-[var(--fg-main)]">
             {displayFrameDepth.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -76,11 +76,11 @@ export function FrameControls() {
           min={minDepth}
           max={maxDepth}
           step={step}
-          className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
         />
-        <div className="flex justify-between text-xs text-neutral-500 mt-0.5">
-          <span>{minDepth}</span>
-          <span>{maxDepth}</span>
+        <div className="flex justify-between text-xs text-[var(--fg-muted)] mt-0.5">
+          <span>{minDepth.toFixed(displayUnit === 'in' ? 1 : 0)}</span>
+          <span>{maxDepth.toFixed(displayUnit === 'in' ? 1 : 0)}</span>
         </div>
       </div>
     </div>

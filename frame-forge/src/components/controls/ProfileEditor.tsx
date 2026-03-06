@@ -257,7 +257,7 @@ export function ProfileEditor() {
         ref={svgRef}
         width={SVG_W}
         height={SVG_H}
-        className="bg-neutral-800 rounded border border-neutral-600 cursor-crosshair select-none"
+        className="bg-[var(--bg-sidebar)] rounded border border-[var(--border-input)] cursor-crosshair select-none transition-colors"
         onPointerDown={handleSvgPointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -271,7 +271,8 @@ export function ProfileEditor() {
             y1={l.y1}
             x2={l.x2}
             y2={l.y2}
-            stroke="#404040"
+            stroke="currentColor"
+            className="text-[var(--border-input)]"
             strokeWidth={0.5}
           />
         ))}
@@ -283,24 +284,25 @@ export function ProfileEditor() {
           width={PLOT_W}
           height={PLOT_H}
           fill="none"
-          stroke="#555"
+          stroke="currentColor"
+          className="text-[var(--border-input)]"
           strokeWidth={1}
         />
 
         {/* Axis labels */}
-        <text x={PAD} y={SVG_H - 4} fill="#888" fontSize={9} textAnchor="middle">
+        <text x={PAD} y={SVG_H - 4} fill="currentColor" className="text-[var(--fg-muted)]" fontSize={9} textAnchor="middle">
           0
         </text>
-        <text x={PAD + PLOT_W} y={SVG_H - 4} fill="#888" fontSize={9} textAnchor="middle">
+        <text x={PAD + PLOT_W} y={SVG_H - 4} fill="currentColor" className="text-[var(--fg-muted)]" fontSize={9} textAnchor="middle">
           1
         </text>
-        <text x={PAD + PLOT_W / 2} y={SVG_H - 4} fill="#666" fontSize={8} textAnchor="middle">
+        <text x={PAD + PLOT_W / 2} y={SVG_H - 4} fill="currentColor" className="text-[var(--fg-muted)] opacity-60" fontSize={8} textAnchor="middle">
           inner → outer
         </text>
-        <text x={8} y={PAD + PLOT_H} fill="#888" fontSize={9} textAnchor="middle">
+        <text x={8} y={PAD + PLOT_H} fill="currentColor" className="text-[var(--fg-muted)]" fontSize={9} textAnchor="middle">
           0
         </text>
-        <text x={8} y={PAD} fill="#888" fontSize={9} textAnchor="middle">
+        <text x={8} y={PAD} fill="currentColor" className="text-[var(--fg-muted)]" fontSize={9} textAnchor="middle">
           1
         </text>
 
@@ -377,10 +379,10 @@ export function ProfileEditor() {
         })}
       </svg>
 
-      <p className="text-[10px] text-neutral-500 mt-1">
+      <p className="text-[10px] text-[var(--fg-muted)] mt-1">
         Click to add · Drag to add curve · Drag point to move · Right-click to delete
       </p>
-      <p className="text-[10px] text-neutral-500">
+      <p className="text-[10px] text-[var(--fg-muted)]">
         Drag handle to adjust curve · Double-click handle to remove
       </p>
     </div>

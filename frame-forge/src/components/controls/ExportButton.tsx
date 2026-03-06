@@ -82,13 +82,13 @@ export function ExportButton() {
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wide">
+        <h3 className="text-sm font-medium text-[var(--fg-muted)] uppercase tracking-wide">
           Export {buildPlateEnabled ? 'Parts' : 'Frame'}
         </h3>
         {splitExportData && (
           <button 
             onClick={clearSplitExport}
-            className="text-[10px] text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="text-[10px] text-[var(--fg-muted)] hover:text-[var(--fg-main)] transition-colors"
           >
             Clear ZIP
           </button>
@@ -101,8 +101,8 @@ export function ExportButton() {
           disabled={isDisabled || (isSplitExporting && splitExportFormat !== 'stl')}
           className={`w-full py-2.5 px-4 rounded font-medium text-sm transition-colors flex items-center justify-center gap-2 ${
             isDisabled
-              ? 'bg-neutral-700 text-neutral-500 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-500 text-white'
+              ? 'bg-[var(--bg-input)] text-[var(--fg-muted)] cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
           }`}
         >
           {isGenerating ? (
@@ -126,15 +126,15 @@ export function ExportButton() {
           disabled={isDisabled || (isSplitExporting && splitExportFormat !== '3mf')}
           className={`w-full py-2.5 px-4 rounded font-medium text-sm transition-colors flex items-center justify-center gap-2 ${
             isDisabled
-              ? 'bg-neutral-700 text-neutral-500 cursor-not-allowed'
-              : 'bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-white'
+              ? 'bg-[var(--bg-input)] text-[var(--fg-muted)] cursor-not-allowed'
+              : 'bg-[var(--bg-sidebar)] border border-[var(--border-main)] hover:bg-[var(--bg-app)] text-[var(--fg-main)] shadow-sm'
           }`}
         >
           {isGenerating ? (
             '...'
           ) : isSplitExporting && splitExportFormat === '3mf' ? (
             <>
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span className="w-4 h-4 border-2 border-[var(--fg-muted)]/30 border-t-[var(--fg-main)] rounded-full animate-spin" />
               Preparing 3MF ZIP...
             </>
           ) : buildPlateEnabled && splitExportData && splitExportFormat === '3mf' ? (
@@ -148,7 +148,7 @@ export function ExportButton() {
       </div>
 
       {splitDescription && buildPlateEnabled && (
-        <div className="text-xs text-neutral-500 text-center">{splitDescription}</div>
+        <div className="text-xs text-[var(--fg-muted)] text-center">{splitDescription}</div>
       )}
     </div>
   );

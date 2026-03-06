@@ -39,7 +39,7 @@ function CollapsibleSection({
           onClick={toggle}
           className="flex-1 flex items-center justify-between text-left"
         >
-          <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wide group-hover:text-white transition-colors">
+          <h3 className="text-sm font-medium text-[var(--fg-muted)] uppercase tracking-wide group-hover:text-[var(--fg-main)] transition-colors">
             {title}
           </h3>
           {!hideArrow && (
@@ -51,7 +51,7 @@ function CollapsibleSection({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className={`w-4 h-4 text-neutral-500 group-hover:text-neutral-300 transition-transform duration-200 mr-2 ${
+              className={`w-4 h-4 text-[var(--fg-muted)] group-hover:text-[var(--fg-main)] transition-transform duration-200 mr-2 ${
                 isOpen ? 'rotate-180' : ''
               }`}
             >
@@ -83,31 +83,31 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-full md:w-80 bg-neutral-800 border-t md:border-t-0 md:border-r border-neutral-700 overflow-y-auto flex-shrink-0">
+    <aside className="w-full md:w-80 bg-[var(--bg-sidebar)] border-t md:border-t-0 md:border-r border-[var(--border-main)] overflow-y-auto flex-shrink-0 transition-colors">
       <div className="p-4 space-y-6">
         <CollapsibleSection title="Picture Size">
           <DimensionControls />
         </CollapsibleSection>
 
-        <div className="border-t border-neutral-700" />
+        <div className="border-t border-[var(--border-main)]" />
 
         <CollapsibleSection title="Frame Dimensions">
           <FrameControls />
         </CollapsibleSection>
 
-        <div className="border-t border-neutral-700" />
+        <div className="border-t border-[var(--border-main)]" />
 
         <CollapsibleSection title="Frame Design">
           <DesignControls />
         </CollapsibleSection>
 
-        <div className="border-t border-neutral-700" />
+        <div className="border-t border-[var(--border-main)]" />
 
         <CollapsibleSection title="Rabbet & Tolerance">
           <RabbetControls />
         </CollapsibleSection>
 
-        <div className="border-t border-neutral-700" />
+        <div className="border-t border-[var(--border-main)]" />
 
         <CollapsibleSection 
           title="Split parts" 
@@ -121,7 +121,7 @@ export function Sidebar() {
                 toggleSplitParts();
               }}
               className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none ${
-                buildPlateEnabled ? 'bg-blue-600' : 'bg-neutral-700'
+                buildPlateEnabled ? 'bg-blue-600' : 'bg-[var(--bg-input)]'
               }`}
             >
               <span
@@ -135,22 +135,22 @@ export function Sidebar() {
           <div className="space-y-6">
             <BuildPlateControls />
             {buildPlateEnabled && (
-              <div className="border-t border-neutral-700 pt-4 animate-in fade-in slide-in-from-top-1 duration-200">
-                <h4 className="text-[10px] font-bold text-neutral-500 uppercase mb-4">Internal Joinery</h4>
+              <div className="border-t border-[var(--border-main)] pt-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                <h4 className="text-[10px] font-bold text-[var(--fg-muted)] uppercase mb-4">Internal Joinery</h4>
                 <JoineryControls />
               </div>
             )}
           </div>
         </CollapsibleSection>
 
-        <div className="border-t border-neutral-700" />
+        <div className="border-t border-[var(--border-main)]" />
 
         <ExportButton />
 
         {/* Print orientation note */}
-        <div className="border-t border-neutral-700" />
-        <div className="text-xs text-neutral-500 space-y-1">
-          <p className="font-medium text-neutral-400">Print Tips</p>
+        <div className="border-t border-[var(--border-main)]" />
+        <div className="text-xs text-[var(--fg-muted)] space-y-1">
+          <p className="font-medium text-[var(--fg-main)]">Print Tips</p>
           <p>Print face-down for best surface quality.</p>
           <p>Use 0.2mm layer height and 15-20% infill.</p>
         </div>

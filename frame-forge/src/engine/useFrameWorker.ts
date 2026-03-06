@@ -52,7 +52,7 @@ export function useFrameWorker() {
           break;
 
         case 'split-export-result':
-          setSplitExportResult(response.zipData, response.splitInfo);
+          setSplitExportResult(response.zipData, response.format, response.splitInfo);
           if (response.diagnosticSvgs && response.diagnosticSvgs.length > 0) {
             console.log(`[FrameForge] ${response.diagnosticSvgs.length} diagnostic SVG(s) generated`);
             (globalThis as Record<string, unknown>).__diagnosticSvgs = response.diagnosticSvgs;
@@ -111,7 +111,7 @@ export function useFrameWorker() {
   ]);
 
   // Split export function
-  const splitExport = useCallback(() => {
+  const splitExport = useCallback((format: 'stl' | '3mf') => {
     if (!workerRef.current) return;
 
     const preset = getBuildPlatePreset(buildPlatePresetId);
@@ -130,6 +130,7 @@ export function useFrameWorker() {
       type: 'split-export',
       params,
       buildPlate: { width: plateWidth, depth: plateDepth },
+      format,
     };
 
     workerRef.current.postMessage(message);

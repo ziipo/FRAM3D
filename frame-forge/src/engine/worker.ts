@@ -28,7 +28,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   if (message.type === 'generate') {
     await handleGenerate(message.params, message.buildPlate);
   } else if (message.type === 'split-export') {
-    await handleSplitExport(message.params, message.buildPlate);
+    await handleSplitExport(message.params, message.buildPlate, message.format);
   }
 };
 
@@ -139,7 +139,7 @@ async function handleGenerate(
     sendProgress('Generating STL...', 80);
 
     // Generate STL data
-    const stlData = generateSTL(positions, indices, normals);
+    const stlData = generateSTL(positions, indices);
 
     sendProgress('Generating 3MF...', 90);
 
@@ -401,7 +401,8 @@ ${triangleLines.join('\n')}
  */
 async function handleSplitExport(
   params: FrameParams,
-  buildPlate: { width: number; depth: number }
+  buildPlate: { width: number; depth: number },
+  format: 'stl' | '3mf'
 ): Promise<void> {
   try {
     sendProgress('Initializing...', 5);
@@ -416,7 +417,7 @@ async function handleSplitExport(
       params.connector
     );
 
-    sendProgress('Generating STL files...', 50);
+    sendProgress(`Generating ${format.toUpperCase()} files...`, 50);
     const zipEntries: { filename: string; data: Uint8Array }[] = [];
 
     for (let i = 0; i < parts.length; i++) {
@@ -429,7 +430,6 @@ async function handleSplitExport(
       const numTris = mesh.numTri;
 
       const positions = new Float32Array(numVerts * 3);
-      const normals = new Float32Array(numVerts * 3);
       const indices = new Uint32Array(numTris * 3);
 
       for (let v = 0; v < numVerts; v++) {
@@ -446,9 +446,17 @@ async function handleSplitExport(
         indices[t * 3 + 2] = verts[2];
       }
 
-      computeNormals(positions, indices, normals);
-      const stlData = generateSTL(positions, indices);
-      zipEntries.push({ filename: part.name, data: new Uint8Array(stlData) });
+      let data: ArrayBuffer;
+      let filename = part.name;
+      
+      if (format === '3mf') {
+        data = generate3MFData(positions, indices);
+        filename = filename.replace(/\.stl$/i, '.3mf');
+      } else {
+        data = generateSTL(positions, indices);
+      }
+      
+      zipEntries.push({ filename, data: new Uint8Array(data) });
 
       part.manifold.delete();
     }
@@ -466,6 +474,7 @@ async function handleSplitExport(
     const response: SplitExportResultMessage = {
       type: 'split-export-result',
       zipData,
+      format,
       splitInfo: {
         bottomPieces: splitInfo.bottom,
         topPieces: splitInfo.top,

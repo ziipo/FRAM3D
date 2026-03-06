@@ -4,8 +4,6 @@ import type { ConnectorType } from '../../types/frame';
 export function JoineryControls() {
   const connector = useFrameStore((s) => s.connector);
   const setConnector = useFrameStore((s) => s.setConnector);
-  const explosionGap = useFrameStore((s) => s.explosionGap);
-  const setExplosionGap = useFrameStore((s) => s.setExplosionGap);
 
   return (
     <div className="space-y-4">
@@ -21,22 +19,6 @@ export function JoineryControls() {
             <option value="floating-tenon">Floating Tenon (Biscuit)</option>
             <option value="tongue-groove">Tongue & Groove</option>
           </select>
-        </div>
-
-        <div className="pt-2 border-t border-neutral-700">
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-neutral-400">Preview Explosion</span>
-            <span className="text-neutral-300">{explosionGap} mm</span>
-          </div>
-          <input
-            type="range"
-            value={explosionGap}
-            onChange={(e) => setExplosionGap(parseFloat(e.target.value))}
-            min={0}
-            max={50}
-            step={1}
-            className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-          />
         </div>
 
         {connector.type === 'floating-tenon' && (

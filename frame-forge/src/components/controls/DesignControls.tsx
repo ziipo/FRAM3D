@@ -92,10 +92,10 @@ export function DesignControls() {
   return (
     <div className="space-y-4">
       {/* Style Toggle */}
-      <div className="flex bg-neutral-700/50 p-1 rounded-lg">
+      <div className="flex flex-col bg-neutral-700/50 p-1 rounded-lg gap-1">
         <button
           onClick={() => setParam('frameStyle', 'profile')}
-          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+          className={`w-full py-1.5 text-xs font-medium rounded-md transition-colors ${
             frameStyle === 'profile'
               ? 'bg-blue-500 text-white shadow'
               : 'text-neutral-400 hover:text-white'
@@ -105,7 +105,7 @@ export function DesignControls() {
         </button>
         <button
           onClick={() => setParam('frameStyle', 'stamp')}
-          className={`flex-1 py-1.5 text-[10px] font-medium rounded-md transition-colors ${
+          className={`w-full py-1.5 text-xs font-medium rounded-md transition-colors ${
             frameStyle === 'stamp'
               ? 'bg-blue-500 text-white shadow'
               : 'text-neutral-400 hover:text-white'
@@ -115,7 +115,7 @@ export function DesignControls() {
         </button>
         <button
           onClick={() => setParam('frameStyle', 'texture')}
-          className={`flex-1 py-1.5 text-[10px] font-medium rounded-md transition-colors ${
+          className={`w-full py-1.5 text-xs font-medium rounded-md transition-colors ${
             frameStyle === 'texture'
               ? 'bg-blue-500 text-white shadow'
               : 'text-neutral-400 hover:text-white'

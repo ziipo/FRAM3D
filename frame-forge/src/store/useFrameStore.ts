@@ -42,10 +42,11 @@ interface FrameState extends FrameParams {
   // Split export state
   isSplitExporting: boolean;
   splitExportData: ArrayBuffer | null;
+  splitExportFormat: 'stl' | '3mf' | null;
   splitInfo: SplitInfo | null;
 
   // Callback for triggering split export from ExportButton
-  triggerSplitExport: (() => void) | null;
+  triggerSplitExport: ((format: 'stl' | '3mf') => void) | null;
 
   // View reset state
   resetView: number;
@@ -69,7 +70,7 @@ interface FrameState extends FrameParams {
   setBuildPlateEnabled: (enabled: boolean) => void;
   setExplosionGap: (v: number) => void;
   setSplitExporting: (exporting: boolean) => void;
-  setSplitExportResult: (zipData: ArrayBuffer, info: SplitInfo) => void;
+  setSplitExportResult: (zipData: ArrayBuffer, format: 'stl' | '3mf', info: SplitInfo) => void;
   clearSplitExport: () => void;
   setTriggerSplitExport: (fn: (() => void) | null) => void;
   requestResetView: () => void;
@@ -161,6 +162,7 @@ export const useFrameStore = create<FrameState>((set) => ({
   // Split export state
   isSplitExporting: false,
   splitExportData: null,
+  splitExportFormat: null,
   splitInfo: null,
   triggerSplitExport: null,
 
@@ -242,11 +244,11 @@ export const useFrameStore = create<FrameState>((set) => ({
   setSplitExporting: (isSplitExporting) =>
     set({ isSplitExporting }),
 
-  setSplitExportResult: (zipData, info) =>
-    set({ splitExportData: zipData, splitInfo: info, isSplitExporting: false }),
+  setSplitExportResult: (zipData, format, info) =>
+    set({ splitExportData: zipData, splitExportFormat: format, splitInfo: info, isSplitExporting: false }),
 
   clearSplitExport: () =>
-    set({ splitExportData: null, splitInfo: null }),
+    set({ splitExportData: null, splitExportFormat: null, splitInfo: null }),
 
   setTriggerSplitExport: (fn) =>
     set({ triggerSplitExport: fn }),
@@ -267,6 +269,7 @@ export const useFrameStore = create<FrameState>((set) => ({
       stlData: null,
       threemfData: null,
       splitExportData: null,
+      splitExportFormat: null,
       splitInfo: null,
       isSplitExporting: false,
       resetView: 0,

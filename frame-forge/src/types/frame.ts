@@ -126,6 +126,7 @@ export interface SplitExportMessage {
   type: 'split-export';
   params: FrameParams;
   buildPlate: { width: number; depth: number };
+  format: 'stl' | '3mf';
 }
 
 export interface ResultMessage {
@@ -149,6 +150,7 @@ export interface ResultMessage {
 export interface SplitExportResultMessage {
   type: 'split-export-result';
   zipData: ArrayBuffer;
+  format: 'stl' | '3mf';
   splitInfo: SplitInfo;
   diagnosticSvgs?: Array<{ name: string; svg: string }>;
 }

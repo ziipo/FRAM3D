@@ -63,12 +63,14 @@ export function downloadSplitZip(
   zipData: ArrayBuffer,
   pictureWidth: number,
   pictureHeight: number,
-  profileName: string
+  profileName: string,
+  format?: string
 ): void {
   const w = Math.round(pictureWidth);
   const h = Math.round(pictureHeight);
   const profile = profileName.toLowerCase().replace(/\s+/g, '-');
-  const filename = `frame-${w}x${h}-${profile}-split.zip`;
+  const formatSuffix = format ? `-${format}` : '';
+  const filename = `frame-${w}x${h}-${profile}-split${formatSuffix}.zip`;
 
   downloadBlob(zipData, filename, 'application/zip');
 }

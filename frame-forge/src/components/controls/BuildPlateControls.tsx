@@ -9,7 +9,6 @@ export function BuildPlateControls() {
   const customDepth = useFrameStore((s) => s.buildPlateCustomDepth);
   const setCustomDepth = useFrameStore((s) => s.setBuildPlateCustomDepth);
   const enabled = useFrameStore((s) => s.buildPlateEnabled);
-  const setEnabled = useFrameStore((s) => s.setBuildPlateEnabled);
 
   const explosionGap = useFrameStore((s) => s.explosionGap);
   const setExplosionGap = useFrameStore((s) => s.setExplosionGap);
@@ -18,33 +17,13 @@ export function BuildPlateControls() {
   const effectiveWidth = presetId === 'custom' ? customWidth : (preset?.width ?? 220);
   const effectiveDepth = presetId === 'custom' ? customDepth : (preset?.depth ?? 220);
 
+  if (!enabled) return null;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-neutral-400">Enabled</span>
-        <button
-          onClick={() => setEnabled(!enabled)}
-          className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${
-            enabled ? 'bg-blue-600' : 'bg-neutral-700'
-          }`}
-        >
-          <span
-            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-              enabled ? 'translate-x-6' : 'translate-x-1'
-            }`}
-          />
-        </button>
-      </div>
-
-      <p className="text-xs text-neutral-500">
-        Split oversized sides to fit your printer.
-      </p>
-
-      {enabled && (
-        <>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-neutral-400 block mb-1">Printer</label>
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs text-neutral-400 block mb-1">Printer</label>
               <select
                 value={presetId}
                 onChange={(e) => setPresetId(e.target.value)}
@@ -103,8 +82,6 @@ export function BuildPlateControls() {
               />
             </div>
           </div>
-        </>
-      )}
     </div>
   );
 }

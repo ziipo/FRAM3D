@@ -15,8 +15,10 @@ export function ExportButton() {
   const buildPlateEnabled = useFrameStore((s) => s.buildPlateEnabled);
   const isSplitExporting = useFrameStore((s) => s.isSplitExporting);
   const splitExportData = useFrameStore((s) => s.splitExportData);
+  const splitExportFormat = useFrameStore((s) => s.splitExportFormat);
   const splitInfo = useFrameStore((s) => s.splitInfo);
   const triggerSplitExport = useFrameStore((s) => s.triggerSplitExport);
+  const clearSplitExport = useFrameStore((s) => s.clearSplitExport);
 
   const getExportDims = () => {
     const preset = getPictureSize(pictureSizeId);
@@ -35,26 +37,34 @@ export function ExportButton() {
     return { width, height, profileName };
   };
 
-  const handleDownloadSTL = () => {
-    if (!stlData) return;
-    const { width, height, profileName } = getExportDims();
-    downloadSTL(stlData, width, height, profileName);
+  const handleExportSTL = () => {
+    if (buildPlateEnabled) {
+      if (splitExportData && splitExportFormat === 'stl') {
+        const { width, height, profileName } = getExportDims();
+        downloadSplitZip(splitExportData, width, height, profileName, 'stl');
+      } else {
+        triggerSplitExport?.('stl');
+      }
+    } else {
+      if (!stlData) return;
+      const { width, height, profileName } = getExportDims();
+      downloadSTL(stlData, width, height, profileName);
+    }
   };
 
-  const handleDownload3MF = () => {
-    if (!threemfData) return;
-    const { width, height, profileName } = getExportDims();
-    download3MF(threemfData, width, height, profileName);
-  };
-
-  const handleSplitExport = () => {
-    triggerSplitExport?.();
-  };
-
-  const handleDownloadZip = () => {
-    if (!splitExportData) return;
-    const { width, height, profileName } = getExportDims();
-    downloadSplitZip(splitExportData, width, height, profileName);
+  const handleExport3MF = () => {
+    if (buildPlateEnabled) {
+      if (splitExportData && splitExportFormat === '3mf') {
+        const { width, height, profileName } = getExportDims();
+        downloadSplitZip(splitExportData, width, height, profileName, '3mf');
+      } else {
+        triggerSplitExport?.('3mf');
+      }
+    } else {
+      if (!threemfData) return;
+      const { width, height, profileName } = getExportDims();
+      download3MF(threemfData, width, height, profileName);
+    }
   };
 
   const isDisabled = isGenerating || (!stlData && !threemfData);
@@ -71,77 +81,74 @@ export function ExportButton() {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wide">
-        Export
-      </h3>
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wide">
+          Export {buildPlateEnabled ? 'Parts' : 'Frame'}
+        </h3>
+        {splitExportData && (
+          <button 
+            onClick={clearSplitExport}
+            className="text-[10px] text-neutral-500 hover:text-neutral-300 transition-colors"
+          >
+            Clear ZIP
+          </button>
+        )}
+      </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         <button
-          onClick={handleDownloadSTL}
-          disabled={!stlData || isGenerating}
-          className={`flex-1 py-2.5 px-4 rounded font-medium text-sm transition-colors ${
-            !stlData || isGenerating
+          onClick={handleExportSTL}
+          disabled={isDisabled || (isSplitExporting && splitExportFormat !== 'stl')}
+          className={`w-full py-2.5 px-4 rounded font-medium text-sm transition-colors flex items-center justify-center gap-2 ${
+            isDisabled
               ? 'bg-neutral-700 text-neutral-500 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-500 text-white'
           }`}
         >
-          {isGenerating ? 'Generating...' : 'STL'}
+          {isGenerating ? (
+            'Generating...'
+          ) : isSplitExporting && splitExportFormat === 'stl' ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Preparing STL ZIP...
+            </>
+          ) : buildPlateEnabled && splitExportData && splitExportFormat === 'stl' ? (
+            `Download STL ZIP (${(splitExportData.byteLength / 1024).toFixed(1)} KB)`
+          ) : buildPlateEnabled ? (
+            'Export Split STL (ZIP)'
+          ) : (
+            'Export Whole STL'
+          )}
         </button>
 
         <button
-          onClick={handleDownload3MF}
-          disabled={!threemfData || isGenerating}
-          className={`flex-1 py-2.5 px-4 rounded font-medium text-sm transition-colors ${
-            !threemfData || isGenerating
+          onClick={handleExport3MF}
+          disabled={isDisabled || (isSplitExporting && splitExportFormat !== '3mf')}
+          className={`w-full py-2.5 px-4 rounded font-medium text-sm transition-colors flex items-center justify-center gap-2 ${
+            isDisabled
               ? 'bg-neutral-700 text-neutral-500 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-500 text-white'
+              : 'bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-white'
           }`}
         >
-          {isGenerating ? '...' : '3MF'}
+          {isGenerating ? (
+            '...'
+          ) : isSplitExporting && splitExportFormat === '3mf' ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Preparing 3MF ZIP...
+            </>
+          ) : buildPlateEnabled && splitExportData && splitExportFormat === '3mf' ? (
+            `Download 3MF ZIP (${(splitExportData.byteLength / 1024).toFixed(1)} KB)`
+          ) : buildPlateEnabled ? (
+            'Export Split 3MF (ZIP)'
+          ) : (
+            'Export Whole 3MF'
+          )}
         </button>
       </div>
 
-      {(stlData || threemfData) && !isDisabled && (
-        <div className="flex justify-between text-xs text-neutral-500">
-          {stlData && <span>STL: {(stlData.byteLength / 1024).toFixed(1)} KB</span>}
-          {threemfData && <span>3MF: {(threemfData.byteLength / 1024).toFixed(1)} KB</span>}
-        </div>
-      )}
-
-      {buildPlateEnabled && (
-        <div className="space-y-2 pt-2 border-t border-neutral-700">
-          {!splitExportData ? (
-            <button
-              onClick={handleSplitExport}
-              disabled={isSplitExporting || isGenerating || !stlData}
-              className={`w-full py-2.5 px-4 rounded font-medium text-sm transition-colors ${
-                isSplitExporting || isGenerating || !stlData
-                  ? 'bg-neutral-700 text-neutral-500 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-500 text-white'
-              }`}
-            >
-              {isSplitExporting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Splitting...
-                </span>
-              ) : (
-                'Split & Export ZIP'
-              )}
-            </button>
-          ) : (
-            <button
-              onClick={handleDownloadZip}
-              className="w-full py-2.5 px-4 rounded font-medium text-sm transition-colors bg-green-600 hover:bg-green-500 text-white"
-            >
-              Download ZIP ({(splitExportData.byteLength / 1024).toFixed(1)} KB)
-            </button>
-          )}
-
-          {splitDescription && (
-            <div className="text-xs text-neutral-500">{splitDescription}</div>
-          )}
-        </div>
+      {splitDescription && buildPlateEnabled && (
+        <div className="text-xs text-neutral-500 text-center">{splitDescription}</div>
       )}
     </div>
   );

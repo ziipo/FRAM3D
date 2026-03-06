@@ -40,22 +40,41 @@ export function buildProfileCrossSection(
     p.y * frameDepth,
   ]);
 
-  // Filter to only points past the rabbet boundary (x >= rabbetWidth).
+  // Safety Check: Ensure rabbet doesn't consume more than 80% of frame width
+  const maxRabbetW = frameWidth * 0.8;
+  const safeRabbetW = Math.min(rabbetWidth, maxRabbetW);
+
+  // Safety Check: Ensure rabbet depth doesn't punch through the profile surface.
+  // We need to check the profile's height at the rabbet boundary.
+  let profileHeightAtRabbet = frameDepth;
+  for (let i = 0; i < scaledTop.length - 1; i++) {
+    const p0 = scaledTop[i];
+    const p1 = scaledTop[i + 1];
+    if (safeRabbetW >= p0[0] && safeRabbetW <= p1[0]) {
+      // Linear interpolation to find height at the exact rabbet width
+      const t = (safeRabbetW - p0[0]) / (p1[0] - p0[0]);
+      profileHeightAtRabbet = p0[1] + t * (p1[1] - p0[1]);
+      break;
+    }
+  }
+  
+  // Enforce a minimum 'floor' thickness of 0.5mm
+  const maxRabbetD = Math.max(0.5, profileHeightAtRabbet - 0.5);
+  const safeRabbetD = Math.min(rabbetDepth, maxRabbetD);
+
+  // Filter to only points past the rabbet boundary (x >= safeRabbetW).
   const profilePoints: Vec2[] = scaledTop.filter(
-    (p) => p[0] >= rabbetWidth - 0.001
+    (p) => p[0] >= safeRabbetW - 0.001
   );
 
   // Build the closed polygon in counter-clockwise order.
-  // CCW in standard 2D (Y-up):
-  //   outer-bottom → outer-top → [profile points, outer to inner] →
-  //   inner-top → rabbet back wall → rabbet shelf → inner-bottom → close
+  // ... (rest of logic uses safeRabbetW and safeRabbetD)
   const polygon: Vec2[] = [];
 
   // Start at outer-back corner
   polygon.push([frameWidth, 0]);
 
   // Up the outer edge to the outer-front corner
-  // Find the outermost profile point's Y to connect properly
   const outerProfileY = profilePoints.length > 0
     ? profilePoints[profilePoints.length - 1][1]
     : frameDepth;
@@ -73,12 +92,11 @@ export function buildProfileCrossSection(
   }
 
   // From innermost profile point, go up to full height at inner edge
-  // (profile starts at x≈rabbetWidth after filtering)
   // Then the rabbet: notch cut into the BACK (low Y) of the inner edge
   polygon.push([0, frameDepth]);          // Inner edge, front face
-  polygon.push([0, rabbetDepth]);         // Inner edge, down to rabbet shelf
-  polygon.push([rabbetWidth, rabbetDepth]); // Rabbet shelf, horizontal
-  polygon.push([rabbetWidth, 0]);          // Rabbet back wall, down to back
+  polygon.push([0, safeRabbetD]);         // Inner edge, down to rabbet shelf
+  polygon.push([safeRabbetW, safeRabbetD]); // Rabbet shelf, horizontal
+  polygon.push([safeRabbetW, 0]);          // Rabbet back wall, down to back
 
   // Close back to outer-back corner (implicit, but ensure no gap)
 

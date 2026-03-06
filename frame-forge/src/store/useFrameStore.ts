@@ -6,6 +6,7 @@ import { defaultProfileId } from '../data/profiles';
 interface FrameState extends FrameParams {
   // Generation state
   isGenerating: boolean;
+  isProcessingCustomStamp: boolean;
   progress: number;
   progressStage: string;
   error: string | null;
@@ -55,6 +56,7 @@ interface FrameState extends FrameParams {
   setParams: (params: Partial<FrameParams>) => void;
   setConnector: (connector: Partial<ConnectorSettings>) => void;
   setGenerating: (isGenerating: boolean) => void;
+  setProcessingCustomStamp: (isProcessing: boolean) => void;
   setProgress: (percent: number, stage: string) => void;
   setError: (error: string | null) => void;
   setMeshData: (data: FrameState['meshData']) => void;
@@ -89,6 +91,16 @@ const defaultParams: FrameParams = {
   stampCornerStyle: 'butt-h',
   stampPattern: 'repeating',
   customStampPolygons: [],
+  stampSize: 1.0,
+  stampRotation: 0,
+
+  // Global Texture
+  textureType: 'v-stripes',
+  textureSpacing: 10,
+  textureDepth: 2,
+  textureRotation: 0,
+  customTexturePolygons: [],
+
   frameWidth: 25,
   frameDepth: 15,
   profileId: defaultProfileId,
@@ -129,6 +141,7 @@ export const useFrameStore = create<FrameState>((set) => ({
 
   // Generation state
   isGenerating: false,
+  isProcessingCustomStamp: false,
   progress: 0,
   progressStage: '',
   error: null,
@@ -190,6 +203,9 @@ export const useFrameStore = create<FrameState>((set) => ({
   setGenerating: (isGenerating) =>
     set(isGenerating ? { isGenerating, error: null } : { isGenerating }),
 
+  setProcessingCustomStamp: (isProcessingCustomStamp) =>
+    set({ isProcessingCustomStamp }),
+
   setProgress: (progress, progressStage) =>
     set({ progress, progressStage }),
 
@@ -242,6 +258,7 @@ export const useFrameStore = create<FrameState>((set) => ({
     set({
       ...defaultParams,
       isGenerating: false,
+      isProcessingCustomStamp: false,
       progress: 0,
       progressStage: '',
       error: null,
@@ -275,6 +292,13 @@ export function selectFrameParams(state: FrameState): FrameParams {
     stampCornerStyle: state.stampCornerStyle,
     stampPattern: state.stampPattern,
     customStampPolygons: state.customStampPolygons,
+    stampSize: state.stampSize,
+    stampRotation: state.stampRotation,
+    textureType: state.textureType,
+    textureSpacing: state.textureSpacing,
+    textureDepth: state.textureDepth,
+    textureRotation: state.textureRotation,
+    customTexturePolygons: state.customTexturePolygons,
     frameWidth: state.frameWidth,
     frameDepth: state.frameDepth,
     profileId: state.profileId,

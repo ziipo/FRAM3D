@@ -150,19 +150,21 @@ export function applyStampPattern(
   length: number,
   params: FrameParams
 ): Manifold {
-  const { M, stampType, stampSpacing, stampDepth, stampPattern, frameWidth, frameDepth } = {
+  const { M, stampType, stampSpacing, stampDepth, stampPattern, stampSize, stampRotation, frameWidth, frameDepth } = {
     M: wasm.Manifold,
     stampType: params.stampType,
     stampSpacing: params.stampSpacing,
     stampDepth: params.stampDepth,
     stampPattern: params.stampPattern,
+    stampSize: params.stampSize,
+    stampRotation: params.stampRotation,
     frameWidth: params.frameWidth,
     frameDepth: params.frameDepth,
   };
 
   if (!stampType || stampSpacing <= 0) return segment;
 
-  const tool = createStampTool(wasm, stampType, frameWidth, stampDepth, params.customStampPolygons);
+  const tool = createStampTool(wasm, stampType, frameWidth, stampDepth, params.customStampPolygons, stampSize, stampRotation);
   if (!tool) return segment;
 
   const tools: Manifold[] = [];
@@ -211,17 +213,104 @@ export function applyStampPattern(
   return result;
 }
 
+/**
+ * Applies a global, seamless texture pattern to the entire unioned frame.
+ * The frame is unioned in world-space.
+ */
+export function applyGlobalTexture(
+  wasm: ManifoldToplevel,
+  frame: Manifold,
+  dims: ComputedDimensions,
+  params: FrameParams
+): Manifold {
+  const { M, textureType, textureSpacing, textureDepth, textureRotation } = {
+    M: wasm.Manifold,
+    textureType: params.textureType,
+    textureSpacing: params.textureSpacing,
+    textureDepth: params.textureDepth,
+    textureRotation: params.textureRotation,
+  };
+
+  if (!textureType || textureSpacing <= 0) return frame;
+
+  const tools: Manifold[] = [];
+  const maxDim = Math.max(dims.outerWidth, dims.outerHeight) * 1.5;
+  const cutDepth = textureDepth + 0.1;
+
+  switch (textureType) {
+    case 'circles': {
+      // Concentric rings centered at origin
+      const numRings = Math.ceil(maxDim / (2 * textureSpacing));
+      for (let i = 1; i <= numRings; i++) {
+        const radius = i * textureSpacing;
+        const ringWidth = textureSpacing * 0.4;
+        
+        // Create a ring by subtracting a smaller cylinder from a larger one
+        const outer = M.cylinder(cutDepth, radius + ringWidth / 2, radius + ringWidth / 2, 64);
+        const inner = M.cylinder(cutDepth + 0.2, radius - ringWidth / 2, radius - ringWidth / 2, 64);
+        const ring = M.difference(outer, inner.translate([0, 0, -0.1]));
+        
+        // Position ring: top surface is at Y=params.frameDepth/2
+        // Default cylinder is along Z, from 0 to cutDepth.
+        // Rotate Z to Z (no rotate), but we want it subtracted from front face.
+        // Front face is at +frameDepth/2 in world Z.
+        tools.push(ring.translate([0, 0, params.frameDepth / 2 - textureDepth]));
+        
+        outer.delete();
+        inner.delete();
+      }
+      break;
+    }
+    
+    case 'v-stripes':
+    case 'd-stripes': {
+      // Calculate the span needed to cover the entire frame at any rotation.
+      // The maximum projection of a rectangle [W, H] onto any line is the diagonal length.
+      const diagonal = Math.sqrt(dims.outerWidth ** 2 + dims.outerHeight ** 2);
+      const span = diagonal * 1.2; // 20% safety margin
+      
+      const numStripes = Math.ceil(span / textureSpacing);
+      const stripeWidth = textureSpacing * 0.5;
+      const startPos = -span / 2;
+      
+      for (let i = 0; i <= numStripes; i++) {
+        const pos = startPos + i * textureSpacing;
+        const box = M.cube([stripeWidth, span, cutDepth], true);
+        
+        // Rotate and position
+        let tool = box.rotate([0, 0, textureRotation]);
+        tool = tool.translate([pos, 0, params.frameDepth / 2 - textureDepth / 2]);
+        tools.push(tool);
+      }
+      break;
+    }
+  }
+
+  if (tools.length === 0) return frame;
+
+  const unionTool = M.union(tools);
+  const result = M.difference(frame, unionTool);
+
+  // Cleanup
+  unionTool.delete();
+  for (const t of tools) t.delete();
+
+  return result;
+}
+
 function createStampTool(
   wasm: ManifoldToplevel,
   type: string,
   frameWidth: number,
   depth: number,
-  customPolygons?: [number, number][][][]
+  customPolygons?: [number, number][][][],
+  stampSize: number = 1.0,
+  stampRotation: number = 0
 ): Manifold | null {
   const M = wasm.Manifold;
   // Make the tool slightly deeper than needed so it cuts cleanly
   const cutDepth = depth + 0.1;
-  const toolSize = frameWidth * 0.6; // Max width of stamp is 60% of frame width
+  const toolSize = frameWidth * 0.6 * stampSize; // Max width of stamp is 60% of frame width * scale factor
 
   switch (type) {
     case 'dots': {
@@ -324,9 +413,17 @@ function createStampTool(
       
       const profile = cs.ofPolygons(manifoldPolygons);
       const extruded = profile.extrude(cutDepth);
-      const res = extruded
+      // Extruded is along Z axis. Base at Z=0, top at Z=cutDepth.
+      // We want it along Y axis, pointing "down" into the frame.
+      let res = extruded
         .translate([0, 0, -cutDepth])
         .rotate([-90, 0, 0]);
+        
+      if (stampRotation !== 0) {
+        // Rotate around local Y axis (which is the outward normal of the face)
+        res = res.rotate([0, stampRotation, 0]);
+      }
+      
       profile.delete();
       return res;
     }

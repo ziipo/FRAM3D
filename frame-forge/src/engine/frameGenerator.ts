@@ -7,6 +7,7 @@ import {
   buildFrameSegment,
   buildFlatSegment,
   applyStampPattern,
+  applyGlobalTexture,
   positionBottomSegment,
   positionTopSegment,
   positionLeftSegment,
@@ -27,6 +28,8 @@ export function generateFrame(
   try {
     if (params.frameStyle === 'stamp') {
       return generateStampedFrame(wasm, params, dims);
+    } else if (params.frameStyle === 'texture') {
+      return generateTexturedFrame(wasm, params, dims);
     }
     return generateProfiledFrame(wasm, params, dims);
   } catch {
@@ -125,6 +128,99 @@ function generateStampedFrame(
 
   // Apply rabbet as a 3D subtraction. This ensures the rabbet notch
   // is only where the picture sits and doesn't extend to the outer edges.
+  const rabbetW = dims.innerWidth + 2 * params.rabbetWidth;
+  const rabbetH = dims.innerHeight + 2 * params.rabbetWidth;
+  const rabbetBox = M.cube([rabbetW, rabbetH, params.rabbetDepth], false);
+
+  const rabbetPositioned = rabbetBox.translate([
+    -rabbetW / 2,
+    -rabbetH / 2,
+    -params.frameDepth / 2,
+  ]);
+
+  const finalFrame = M.difference(frame, rabbetPositioned);
+
+  // Cleanup
+  crossSection.delete();
+  bottomRaw.delete();
+  topRaw.delete();
+  leftRaw.delete();
+  rightRaw.delete();
+  bottom.delete();
+  top.delete();
+  left.delete();
+  right.delete();
+  rabbetBox.delete();
+  rabbetPositioned.delete();
+  frame.delete();
+
+  const mesh = finalFrame.getMesh();
+  return { manifold: finalFrame, mesh, dimensions: dims };
+}
+
+/**
+ * Global texture-based frame generation using 4 flat segments.
+ */
+function generateTexturedFrame(
+  wasm: ManifoldToplevel,
+  params: FrameParams,
+  dims: ComputedDimensions
+): { manifold: Manifold; mesh: Mesh; dimensions: ComputedDimensions } {
+  const { Manifold: M } = wasm;
+
+  const crossSection = buildRectangularCrossSection(
+    wasm,
+    params.frameWidth,
+    params.frameDepth
+  );
+
+  const fw = params.frameWidth;
+  let bottomLen: number, topLen: number, leftLen: number, rightLen: number;
+
+  if (params.stampCornerStyle === 'butt-h') {
+    bottomLen = dims.outerWidth;
+    topLen = dims.outerWidth;
+    leftLen = dims.innerHeight;
+    rightLen = dims.innerHeight;
+  } else if (params.stampCornerStyle === 'butt-v') {
+    bottomLen = dims.innerWidth;
+    topLen = dims.innerWidth;
+    leftLen = dims.outerHeight;
+    rightLen = dims.outerHeight;
+  } else {
+    bottomLen = dims.outerWidth - fw;
+    topLen = dims.outerWidth - fw;
+    leftLen = dims.outerHeight - fw;
+    rightLen = dims.outerHeight - fw;
+  }
+
+  const bottomRaw = buildFlatSegment(wasm, crossSection, bottomLen);
+  const topRaw = buildFlatSegment(wasm, crossSection, topLen);
+  const leftRaw = buildFlatSegment(wasm, crossSection, leftLen);
+  const rightRaw = buildFlatSegment(wasm, crossSection, rightLen);
+
+  // Position each segment around the frame
+  let bottom = positionBottomSegment(bottomRaw, dims, params);
+  let top = positionTopSegment(topRaw, dims, params);
+  let left = positionLeftSegment(leftRaw, dims, params);
+  let right = positionRightSegment(rightRaw, dims, params);
+
+  // Adjust positioning based on butt/cyclic
+  if (params.stampCornerStyle === 'butt-h') {
+    left = left.translate([0, fw, 0]);
+    right = right.translate([0, -fw, 0]);
+  } else if (params.stampCornerStyle === 'butt-v') {
+    bottom = bottom.translate([-fw, 0, 0]);
+    top = top.translate([fw, 0, 0]);
+  }
+
+  // Union all 4 segments into one solid frame
+  let frame = M.union([bottom, top, left, right]);
+
+  // Apply the global texture to the whole unioned frame
+  frame = applyGlobalTexture(wasm, frame, dims, params);
+
+  // Apply rabbet as a 3D subtraction.
   const rabbetW = dims.innerWidth + 2 * params.rabbetWidth;
   const rabbetH = dims.innerHeight + 2 * params.rabbetWidth;
   const rabbetBox = M.cube([rabbetW, rabbetH, params.rabbetDepth], false);

@@ -63,13 +63,22 @@ export interface FrameParams {
   tolerance: number;    // mm, clearance around picture
 
   // Frame
-  frameStyle: 'profile' | 'stamp';
+  frameStyle: 'profile' | 'stamp' | 'texture';
   stampType: string;
   stampSpacing: number;
   stampDepth: number;
   stampCornerStyle: 'butt-h' | 'butt-v' | 'cyclic';
   stampPattern: 'repeating' | 'alternating';
   customStampPolygons: [number, number][][][];
+  stampSize: number;     // 0.1 .. 2.0 multiplier
+  stampRotation: number;  // -180 .. 180 degrees
+
+  // Global Texture parameters
+  textureType: 'circles' | 'v-stripes' | 'd-stripes' | 'custom';
+  textureSpacing: number;
+  textureDepth: number;
+  textureRotation: number;
+  customTexturePolygons: [number, number][][][];
 
   frameWidth: number;   // mm, width of the molding
   frameDepth: number;   // mm, total thickness

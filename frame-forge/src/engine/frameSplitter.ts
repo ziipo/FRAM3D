@@ -7,6 +7,7 @@ import {
   buildFrameSegment,
   buildFlatSegment,
   applyStampPattern,
+  applyGlobalTexture,
   positionBottomSegment,
   positionTopSegment,
   positionLeftSegment,
@@ -444,7 +445,7 @@ export function splitFrameForExport(
 
   // Build the 2D cross-section
   let crossSection: CrossSection;
-  if (params.frameStyle === 'stamp') {
+  if (params.frameStyle === 'stamp' || params.frameStyle === 'texture') {
     crossSection = buildRectangularCrossSection(wasm, params.frameWidth, params.frameDepth);
   } else {
     crossSection = buildProfileCrossSection(
@@ -488,6 +489,28 @@ export function splitFrameForExport(
     topRaw = applyStampPattern(wasm, topRaw, topLen, params);
     leftRaw = applyStampPattern(wasm, leftRaw, leftLen, params);
     rightRaw = applyStampPattern(wasm, rightRaw, rightLen, params);
+  } else if (params.frameStyle === 'texture') {
+    if (params.stampCornerStyle === 'butt-h') {
+      bottomLen = dims.outerWidth;
+      topLen = dims.outerWidth;
+      leftLen = dims.innerHeight;
+      rightLen = dims.innerHeight;
+    } else if (params.stampCornerStyle === 'butt-v') {
+      bottomLen = dims.innerWidth;
+      topLen = dims.innerWidth;
+      leftLen = dims.outerHeight;
+      rightLen = dims.outerHeight;
+    } else {
+      bottomLen = dims.outerWidth - fw;
+      topLen = dims.outerWidth - fw;
+      leftLen = dims.outerHeight - fw;
+      rightLen = dims.outerHeight - fw;
+    }
+    
+    bottomRaw = buildFlatSegment(wasm, crossSection, bottomLen);
+    topRaw = buildFlatSegment(wasm, crossSection, topLen);
+    leftRaw = buildFlatSegment(wasm, crossSection, leftLen);
+    rightRaw = buildFlatSegment(wasm, crossSection, rightLen);
   } else {
     bottomRaw = buildFrameSegment(wasm, crossSection, dims.outerWidth, fw);
     topRaw = buildFrameSegment(wasm, crossSection, dims.outerWidth, fw);
@@ -511,11 +534,28 @@ export function splitFrameForExport(
     } else if (params.stampCornerStyle === 'cyclic') {
       // No additional translation needed for cyclic pinwheel.
     }
+  } else if (params.frameStyle === 'texture') {
+    if (params.stampCornerStyle === 'butt-h') {
+      leftSide = leftSide.translate([0, fw, 0]);
+      rightSide = rightSide.translate([0, -fw, 0]);
+    } else if (params.stampCornerStyle === 'butt-v') {
+      bottomSide = bottomSide.translate([-fw, 0, 0]);
+      topSide = topSide.translate([fw, 0, 0]);
+    }
   }
 
-  // If stamp mode, subtract rabbet from each side
-  if (params.frameStyle === 'stamp') {
+  // If stamp/texture mode, subtract rabbet from each side
+  if (params.frameStyle === 'stamp' || params.frameStyle === 'texture') {
     const { Manifold: M } = wasm;
+    
+    if (params.frameStyle === 'texture') {
+      // Apply global texture pattern to each side segment individually
+      bottomSide = applyGlobalTexture(wasm, bottomSide, dims, params);
+      topSide = applyGlobalTexture(wasm, topSide, dims, params);
+      leftSide = applyGlobalTexture(wasm, leftSide, dims, params);
+      rightSide = applyGlobalTexture(wasm, rightSide, dims, params);
+    }
+
     const rabbetW = dims.innerWidth + 2 * params.rabbetWidth;
     const rabbetH = dims.innerHeight + 2 * params.rabbetWidth;
     const rabbetBox = M.cube([rabbetW, rabbetH, params.rabbetDepth], false);
@@ -547,8 +587,8 @@ export function splitFrameForExport(
   const tenonParts: SplitPart[] = [];
   const diagnosticSvgs: DiagnosticSvg[] = [];
 
-  // Apply corner joinery for Stamped Butt joints
-  if (params.frameStyle === 'stamp' && connector.type !== 'none') {
+  // Apply corner joinery for Stamped/Textured joints
+  if ((params.frameStyle === 'stamp' || params.frameStyle === 'texture') && connector.type !== 'none') {
     if (params.stampCornerStyle === 'butt-h') {
       const wallThickness = connector.type === 'floating-tenon' ? connector.floatingTenon.wallThickness : connector.tongueGroove.wallThickness;
       const res = computeSafeZone(crossSection, wallThickness, 'bottom', params, dims);
@@ -601,7 +641,7 @@ export function splitFrameForExport(
 
         shrunkSection.delete();
       }
-    } else if (params.stampCornerStyle === 'cyclic') {
+    } else if (params.stampCornerStyle === 'cyclic' || params.frameStyle === 'texture') {
       const wallThickness = connector.type === 'floating-tenon' ? connector.floatingTenon.wallThickness : connector.tongueGroove.wallThickness;
       
       // BR corner: cut piece is rightSide, flush piece is bottomSide. Split = y, cut = -innerHeight/2

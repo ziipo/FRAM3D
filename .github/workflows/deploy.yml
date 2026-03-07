@@ -26,7 +26,10 @@ jobs:
         working-directory: frame-forge
 
       - name: Build
-        run: npm run build
+        run: |
+          npm run build
+          touch dist/.nojekyll
+          cp dist/index.html dist/404.html
         working-directory: frame-forge
 
       - name: Deploy

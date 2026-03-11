@@ -34,7 +34,7 @@ export function FrameControls() {
       <div>
         <div className="flex justify-between text-xs mb-1">
           <label className="text-[var(--fg-muted)]">Frame Width</label>
-          <span className="text-[var(--fg-main)]">
+          <span className="text-[var(--fg-main)] font-mono">
             {displayFrameWidth.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -50,7 +50,7 @@ export function FrameControls() {
           min={minWidth}
           max={maxWidth}
           step={step}
-          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
         />
         <div className="flex justify-between text-xs text-[var(--fg-muted)] mt-0.5">
           <span>{minWidth.toFixed(displayUnit === 'in' ? 1 : 0)}</span>
@@ -62,7 +62,7 @@ export function FrameControls() {
       <div>
         <div className="flex justify-between text-xs mb-1">
           <label className="text-[var(--fg-muted)]">Frame Depth</label>
-          <span className="text-[var(--fg-main)]">
+          <span className="text-[var(--fg-main)] font-mono">
             {displayFrameDepth.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -76,7 +76,7 @@ export function FrameControls() {
           min={minDepth}
           max={maxDepth}
           step={step}
-          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
         />
         <div className="flex justify-between text-xs text-[var(--fg-muted)] mt-0.5">
           <span>{minDepth.toFixed(displayUnit === 'in' ? 1 : 0)}</span>

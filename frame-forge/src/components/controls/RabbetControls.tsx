@@ -29,7 +29,7 @@ export function RabbetControls() {
       <div>
         <div className="flex justify-between text-xs mb-1">
           <label className="text-[var(--fg-muted)]">Rabbet Width</label>
-          <span className="text-[var(--fg-main)]">
+          <span className="text-[var(--fg-main)] font-mono">
             {displayRabbetWidth.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -43,7 +43,7 @@ export function RabbetControls() {
           min={minRabbet}
           max={maxRabbetWidth}
           step={step}
-          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
         />
       </div>
 
@@ -51,7 +51,7 @@ export function RabbetControls() {
       <div>
         <div className="flex justify-between text-xs mb-1">
           <label className="text-[var(--fg-muted)]">Rabbet Depth</label>
-          <span className="text-[var(--fg-main)]">
+          <span className="text-[var(--fg-main)] font-mono">
             {displayRabbetDepth.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -65,7 +65,7 @@ export function RabbetControls() {
           min={minRabbet}
           max={maxRabbetDepth}
           step={step}
-          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
         />
       </div>
 
@@ -73,7 +73,7 @@ export function RabbetControls() {
       <div>
         <div className="flex justify-between text-xs mb-1">
           <label className="text-[var(--fg-muted)]">Tolerance (clearance)</label>
-          <span className="text-[var(--fg-main)]">
+          <span className="text-[var(--fg-main)] font-mono">
             {displayTolerance.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
           </span>
         </div>
@@ -87,7 +87,7 @@ export function RabbetControls() {
           min={minTolerance}
           max={maxTolerance}
           step={step}
-          className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+          className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
         />
         <p className="text-xs text-[var(--fg-muted)] mt-1">
           Extra space around the picture for easy insertion.

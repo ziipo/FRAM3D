@@ -99,10 +99,10 @@ export function ExportButton() {
         <button
           onClick={handleExportSTL}
           disabled={isDisabled || (isSplitExporting && splitExportFormat !== 'stl')}
-          className={`w-full py-2.5 px-4 rounded font-medium text-sm transition-colors flex items-center justify-center gap-2 ${
+          className={`w-full py-2.5 px-4 rounded-none font-medium text-sm transition-colors flex items-center justify-center gap-2 border border-[var(--border-main)] ${
             isDisabled
               ? 'bg-[var(--bg-input)] text-[var(--fg-muted)] cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
+              : 'bg-primary hover:bg-primary-dark text-fg-on-primary'
           }`}
         >
           {isGenerating ? (
@@ -124,10 +124,10 @@ export function ExportButton() {
         <button
           onClick={handleExport3MF}
           disabled={isDisabled || (isSplitExporting && splitExportFormat !== '3mf')}
-          className={`w-full py-2.5 px-4 rounded font-medium text-sm transition-colors flex items-center justify-center gap-2 ${
+          className={`w-full py-2.5 px-4 rounded-none font-medium text-sm transition-colors flex items-center justify-center gap-2 border border-[var(--border-main)] ${
             isDisabled
               ? 'bg-[var(--bg-input)] text-[var(--fg-muted)] cursor-not-allowed'
-              : 'bg-[var(--bg-sidebar)] border border-[var(--border-main)] hover:bg-[var(--bg-app)] text-[var(--fg-main)] shadow-sm'
+              : 'bg-[var(--bg-sidebar)] hover:bg-[var(--bg-surface-elevated)] text-[var(--fg-main)]'
           }`}
         >
           {isGenerating ? (

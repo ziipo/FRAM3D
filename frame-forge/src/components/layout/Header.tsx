@@ -26,24 +26,24 @@ export function Header() {
     <header className="h-14 bg-[var(--bg-sidebar)] border-b border-[var(--border-main)] flex items-center justify-between px-4 flex-shrink-0 transition-colors">
       <div className="flex items-center gap-2">
         <svg
-          className="w-8 h-8 text-blue-500"
+          className="w-8 h-8 text-primary"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
         >
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <rect x="6" y="6" width="12" height="12" rx="1" />
+          <rect x="3" y="3" width="18" height="18" rx="0" />
+          <rect x="6" y="6" width="12" height="12" rx="0" />
         </svg>
         <h1 className="text-xl font-semibold text-[var(--fg-main)]">FrameForge</h1>
-        <span className="text-xs text-[var(--fg-muted)] hidden sm:inline">
+        <span className="text-xs text-[var(--fg-muted)] hidden sm:inline uppercase tracking-widest">
           3D-Printable Picture Frame Generator
         </span>
       </div>
       <div className="flex items-center gap-2">
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="p-2 rounded-md transition-colors hover:bg-[var(--bg-app)] text-[var(--fg-muted)] hover:text-[var(--fg-main)]"
+          className="p-2 rounded-none border border-transparent transition-colors hover:bg-[var(--bg-app)] hover:border-[var(--border-main)] text-[var(--fg-muted)] hover:text-[var(--fg-main)]"
           title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {theme === 'dark' ? (
@@ -59,10 +59,10 @@ export function Header() {
 
         <button
           onClick={handleShare}
-          className={`px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
+          className={`px-3 py-1.5 text-sm rounded-none border border-[var(--border-main)] transition-colors flex items-center gap-1.5 ${
             copied
               ? 'bg-green-600 text-white'
-              : 'bg-blue-600 hover:bg-blue-500 text-white'
+              : 'bg-primary hover:bg-primary-dark text-fg-on-primary'
           }`}
         >
           {copied ? (

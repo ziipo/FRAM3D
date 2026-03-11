@@ -257,7 +257,7 @@ export function ProfileEditor() {
         ref={svgRef}
         width={SVG_W}
         height={SVG_H}
-        className="bg-[var(--bg-sidebar)] rounded border border-[var(--border-input)] cursor-crosshair select-none transition-colors"
+        className="bg-[var(--bg-sidebar)] rounded-none border border-[var(--border-input)] cursor-crosshair select-none transition-colors"
         onPointerDown={handleSvgPointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

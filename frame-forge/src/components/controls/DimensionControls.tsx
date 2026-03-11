@@ -33,7 +33,8 @@ export function DimensionControls() {
         <select
           value={pictureSizeId}
           onChange={(e) => setParam('pictureSizeId', e.target.value)}
-          className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded px-3 py-2 text-[var(--fg-main)] text-sm focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded-none px-3 py-2 text-[var(--fg-main)] text-sm focus:outline-none focus:border-primary transition-colors"
+          aria-label="Picture Size Preset"
         >          {pictureSizePresets.map((preset) => (
             <option key={preset.id} value={preset.id}>
               {preset.label}
@@ -59,7 +60,7 @@ export function DimensionControls() {
               min={displayUnit === 'in' ? 1 : 25}
               max={displayUnit === 'in' ? 40 : 1000}
               step={displayUnit === 'in' ? 0.1 : 1}
-              className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded px-3 py-2 text-[var(--fg-main)] text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded-none px-3 py-2 text-[var(--fg-main)] text-sm focus:outline-none focus:border-primary transition-colors"
             />
           </div>
           <div>
@@ -76,7 +77,7 @@ export function DimensionControls() {
               min={displayUnit === 'in' ? 1 : 25}
               max={displayUnit === 'in' ? 40 : 1000}
               step={displayUnit === 'in' ? 0.1 : 1}
-              className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded px-3 py-2 text-[var(--fg-main)] text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded-none px-3 py-2 text-[var(--fg-main)] text-sm focus:outline-none focus:border-primary transition-colors"
             />
           </div>
         </div>
@@ -85,12 +86,12 @@ export function DimensionControls() {
       {/* Unit toggle */}
       <div>
         <label className="block text-xs text-[var(--fg-muted)] mb-1">Units</label>
-        <div className="flex rounded overflow-hidden border border-[var(--border-input)]">
+        <div className="flex rounded-none overflow-hidden border border-[var(--border-input)]">
           <button
             onClick={() => setParam('displayUnit', 'mm')}
             className={`flex-1 py-1.5 text-sm font-medium transition-colors ${
               displayUnit === 'mm'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-primary text-fg-on-primary'
                 : 'bg-[var(--bg-input)] text-[var(--fg-muted)] hover:text-[var(--fg-main)]'
             }`}
           >
@@ -100,7 +101,7 @@ export function DimensionControls() {
             onClick={() => setParam('displayUnit', 'in')}
             className={`flex-1 py-1.5 text-sm font-medium transition-colors ${
               displayUnit === 'in'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-primary text-fg-on-primary'
                 : 'bg-[var(--bg-input)] text-[var(--fg-muted)] hover:text-[var(--fg-main)]'
             }`}
           >
@@ -110,7 +111,7 @@ export function DimensionControls() {
       </div>
       {/* Display current dimensions (read-only for presets) */}
       {!isCustom && currentPreset && (
-        <div className="text-xs text-[var(--fg-muted)]">
+        <div className="text-xs text-[var(--fg-muted)] font-mono">
           {displayWidth.toFixed(displayUnit === 'in' ? 2 : 1)} ×{' '}
           {displayHeight.toFixed(displayUnit === 'in' ? 2 : 1)} {displayUnit}
         </div>

@@ -13,7 +13,7 @@ export function JoineryControls() {
           <select
             value={connector.type}
             onChange={(e) => setConnector({ type: e.target.value as ConnectorType })}
-            className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded p-1.5 text-sm text-[var(--fg-main)] focus:ring-1 focus:ring-blue-500 outline-none"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded-none p-1.5 text-sm text-[var(--fg-main)] focus:ring-1 focus:ring-primary outline-none"
           >
             <option value="none">None (Single piece sides)</option>
             <option value="floating-tenon">Floating Tenon (Biscuit)</option>
@@ -26,7 +26,7 @@ export function JoineryControls() {
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-[var(--fg-muted)]">Tenon Length</span>
-                <span className="text-[var(--fg-main)]">{connector.floatingTenon.tenonLength} mm</span>
+                <span className="text-[var(--fg-main)] font-mono">{connector.floatingTenon.tenonLength} mm</span>
               </div>
               <input
                 type="range"
@@ -37,13 +37,13 @@ export function JoineryControls() {
                 min={5}
                 max={40}
                 step={1}
-                className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
               />
             </div>
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-[var(--fg-muted)]">Wall Thickness</span>
-                <span className="text-[var(--fg-main)]">{connector.floatingTenon.wallThickness} mm</span>
+                <span className="text-[var(--fg-main)] font-mono">{connector.floatingTenon.wallThickness} mm</span>
               </div>
               <input
                 type="range"
@@ -54,13 +54,13 @@ export function JoineryControls() {
                 min={1}
                 max={5}
                 step={0.5}
-                className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
               />
             </div>
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-[var(--fg-muted)]">Tolerance (XY)</span>
-                <span className="text-[var(--fg-main)]">{connector.floatingTenon.toleranceXY} mm</span>
+                <span className="text-[var(--fg-main)] font-mono">{connector.floatingTenon.toleranceXY} mm</span>
               </div>
               <input
                 type="range"
@@ -71,7 +71,7 @@ export function JoineryControls() {
                 min={0}
                 max={1}
                 step={0.05}
-                className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
               />
             </div>
           </div>
@@ -82,7 +82,7 @@ export function JoineryControls() {
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-[var(--fg-muted)]">Tongue Length</span>
-                <span className="text-[var(--fg-main)]">{connector.tongueGroove.tongueLength} mm</span>
+                <span className="text-[var(--fg-main)] font-mono">{connector.tongueGroove.tongueLength} mm</span>
               </div>
               <input
                 type="range"
@@ -93,13 +93,13 @@ export function JoineryControls() {
                 min={2}
                 max={20}
                 step={1}
-                className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
               />
             </div>
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-[var(--fg-muted)]">Wall Thickness</span>
-                <span className="text-[var(--fg-main)]">{connector.tongueGroove.wallThickness} mm</span>
+                <span className="text-[var(--fg-main)] font-mono">{connector.tongueGroove.wallThickness} mm</span>
               </div>
               <input
                 type="range"
@@ -110,7 +110,7 @@ export function JoineryControls() {
                 min={1}
                 max={5}
                 step={0.5}
-                className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
               />
             </div>
           </div>

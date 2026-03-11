@@ -27,7 +27,7 @@ export function BuildPlateControls() {
           <select
             value={presetId}
             onChange={(e) => setPresetId(e.target.value)}
-            className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded p-1.5 text-sm text-[var(--fg-main)] focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded-none p-1.5 text-sm text-[var(--fg-main)] focus:ring-1 focus:ring-primary outline-none transition-colors"
           >
             {buildPlatePresets.map((p) => (
               <option key={p.id} value={p.id}>
@@ -45,7 +45,7 @@ export function BuildPlateControls() {
                 type="number"
                 value={customWidth}
                 onChange={(e) => setCustomWidth(parseFloat(e.target.value))}
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded p-1.5 text-sm text-[var(--fg-main)] focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded-none p-1.5 text-sm text-[var(--fg-main)] focus:ring-1 focus:ring-primary outline-none transition-colors"
               />
             </div>
             <div>
@@ -54,7 +54,7 @@ export function BuildPlateControls() {
                 type="number"
                 value={customDepth}
                 onChange={(e) => setCustomDepth(parseFloat(e.target.value))}
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded p-1.5 text-sm text-[var(--fg-main)] focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded-none p-1.5 text-sm text-[var(--fg-main)] focus:ring-1 focus:ring-primary outline-none transition-colors"
               />
             </div>
           </div>
@@ -69,7 +69,7 @@ export function BuildPlateControls() {
         <div className="pt-2 border-t border-[var(--border-main)]">
           <div className="flex justify-between text-xs mb-1">
             <span className="text-[var(--fg-muted)]">Preview Explosion</span>
-            <span className="text-[var(--fg-main)]">{explosionGap} mm</span>
+            <span className="text-[var(--fg-main)] font-mono">{explosionGap} mm</span>
           </div>
           <input
             type="range"
@@ -78,7 +78,7 @@ export function BuildPlateControls() {
             min={0}
             max={50}
             step={1}
-            className="w-full h-2 bg-[var(--bg-input)] rounded-lg appearance-none cursor-pointer accent-blue-500"
+            className="w-full h-2 bg-[var(--bg-input)] rounded-none appearance-none cursor-pointer accent-primary" aria-label="Control"
           />
         </div>
       </div>

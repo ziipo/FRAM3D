@@ -39,7 +39,7 @@ function CollapsibleSection({
           onClick={toggle}
           className="flex-1 flex items-center justify-between text-left"
         >
-          <h3 className="text-sm font-medium text-[var(--fg-muted)] uppercase tracking-wide group-hover:text-[var(--fg-main)] transition-colors">
+          <h3 className="text-sm font-bold text-[var(--fg-main)] uppercase tracking-wide group-hover:text-primary transition-colors">
             {title}
           </h3>
           {!hideArrow && (
@@ -120,13 +120,14 @@ export function Sidebar() {
                 e.stopPropagation();
                 toggleSplitParts();
               }}
-              className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none ${
-                buildPlateEnabled ? 'bg-blue-600' : 'bg-[var(--bg-input)]'
-              }`}
+              className={`relative inline-flex h-5 w-10 items-center rounded-none transition-colors focus:outline-none ${
+                buildPlateEnabled ? 'bg-primary' : 'bg-[var(--bg-input)]'
+              } border-2 border-[var(--border-main)]`}
+              aria-label="Toggle split parts"
             >
               <span
-                className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${
-                  buildPlateEnabled ? 'translate-x-4.5' : 'translate-x-1'
+                className={`inline-block h-3 w-3 transform rounded-none transition-transform ${
+                  buildPlateEnabled ? 'translate-x-5.5 bg-fg-on-primary' : 'translate-x-1 bg-[var(--fg-main)]'
                 }`}
               />
             </button>
@@ -136,7 +137,7 @@ export function Sidebar() {
             <BuildPlateControls />
             {buildPlateEnabled && (
               <div className="border-t border-[var(--border-main)] pt-4 animate-in fade-in slide-in-from-top-1 duration-200">
-                <h4 className="text-[10px] font-bold text-[var(--fg-muted)] uppercase mb-4">Internal Joinery</h4>
+                <h4 className="text-[10px] font-bold text-[var(--fg-main)] uppercase mb-4 font-mono">Internal Joinery</h4>
                 <JoineryControls />
               </div>
             )}
@@ -149,10 +150,12 @@ export function Sidebar() {
 
         {/* Print orientation note */}
         <div className="border-t border-[var(--border-main)]" />
-        <div className="text-xs text-[var(--fg-muted)] space-y-1">
-          <p className="font-medium text-[var(--fg-main)]">Print Tips</p>
-          <p>Print face-down for best surface quality.</p>
-          <p>Use 0.2mm layer height and 15-20% infill.</p>
+        <div className="text-xs text-[var(--fg-muted)] space-y-2">
+          <p className="font-bold text-[var(--fg-main)] uppercase tracking-wider font-mono">Print Tips</p>
+          <div className="space-y-1 font-mono text-[10px]">
+            <p>• Print face-down for best surface quality.</p>
+            <p>• Use 0.2mm layer height and 15-20% infill.</p>
+          </div>
         </div>
       </div>
     </aside>

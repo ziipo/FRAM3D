@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, Grid, Center } from '@react-three/drei';
+import { OrbitControls, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrameStore } from '../../store/useFrameStore';
 import { useFrameWorker } from '../../engine/useFrameWorker';
 import { meshToThreeGeometry } from '../../engine/bridge';
+import { getPictureSize } from '../../data/presets';
 
-function FrameMesh() {
+function FrameMesh({ color, accentColor }: { color: string, accentColor: string }) {
   const meshData = useFrameStore((s) => s.meshData);
   const splitParts = useFrameStore((s) => s.splitParts);
   const explosionGap = useFrameStore((s) => s.explosionGap);
@@ -22,7 +23,14 @@ function FrameMesh() {
     return (
       <group>
         {splitParts.map((part, i) => (
-          <ExplodedPart key={`${part.name}-${i}`} part={part} gap={explosionGap} allParts={splitParts} />
+          <ExplodedPart 
+            key={`${part.name}-${i}`} 
+            part={part} 
+            gap={explosionGap} 
+            allParts={splitParts} 
+            color={color}
+            accentColor={accentColor}
+          />
         ))}
       </group>
     );
@@ -33,7 +41,7 @@ function FrameMesh() {
   return (
     <mesh ref={meshRef} geometry={geometry} castShadow receiveShadow>
       <meshStandardMaterial
-        color="#b8b8b8"
+        color={color}
         metalness={0.1}
         roughness={0.6}
         flatShading={true}
@@ -50,7 +58,19 @@ interface SplitPartData {
   worldPos?: [number, number, number];
 }
 
-function ExplodedPart({ part, gap, allParts }: { part: SplitPartData, gap: number, allParts: SplitPartData[] }) {
+function ExplodedPart({ 
+  part, 
+  gap, 
+  allParts,
+  color,
+  accentColor
+}: { 
+  part: SplitPartData, 
+  gap: number, 
+  allParts: SplitPartData[],
+  color: string,
+  accentColor: string
+}) {
   const geometry = useMemo(() => meshToThreeGeometry(part), [part]);
   
   // Calculate offset based on worldPos and explosion gap
@@ -120,7 +140,7 @@ function ExplodedPart({ part, gap, allParts }: { part: SplitPartData, gap: numbe
   return (
     <mesh geometry={geometry} position={position} castShadow receiveShadow>
       <meshStandardMaterial
-        color={part.name.includes('tenon') ? "#4a90e2" : "#b8b8b8"}
+        color={part.name.includes('tenon') ? accentColor : color}
         metalness={0.1}
         roughness={0.6}
         flatShading={true}
@@ -181,45 +201,57 @@ function ResetViewButton() {
 
 function Scene() {
   const theme = useFrameStore((s) => s.theme);
-  const bgColor = theme === 'dark' ? '#121212' : '#f5f5f5';
-  const gridColor = theme === 'dark' ? '#404040' : '#cccccc';
-  const sectionColor = theme === 'dark' ? '#505050' : '#aaaaaa';
+  
+  // Axiom 3D Colors
+  const bgColor = theme === 'dark' ? '#0A192F' : '#EBF3FF';
+  const gridColor = theme === 'dark' ? 'rgba(100, 255, 218, 0.1)' : 'rgba(0, 80, 158, 0.1)';
+  const sectionColor = theme === 'dark' ? 'rgba(100, 255, 218, 0.3)' : 'rgba(0, 80, 158, 0.3)';
+  const accentColor = theme === 'dark' ? '#64FFDA' : '#003366';
+  const meshColor = theme === 'dark' ? '#CCD6F6' : '#FFFFFF';
+
+  // Calculate the bottom Y position of the frame dynamically
+  const pictureSizeId = useFrameStore((s) => s.pictureSizeId);
+  const customHeight = useFrameStore((s) => s.customHeight);
+  const frameWidth = useFrameStore((s) => s.frameWidth);
+  const preset = getPictureSize(pictureSizeId);
+  const innerHeight = pictureSizeId === 'custom' ? customHeight : (preset?.dimensions.height ?? customHeight);
+  const outerHeight = innerHeight + (frameWidth * 2);
+  const bottomY = -(outerHeight / 2) - 0.1;
 
   return (
     <>
       <color attach="background" args={[bgColor]} />
-      {/* Lighting */}
-      <ambientLight intensity={theme === 'dark' ? 0.4 : 0.7} />
+      {/* Lighting - Increased for better visibility on white model */}
+      <ambientLight intensity={theme === 'dark' ? 0.6 : 0.9} />
       <directionalLight
         position={[10, 20, 10]}
-        intensity={theme === 'dark' ? 1 : 1.2}
+        intensity={theme === 'dark' ? 0.8 : 1.2}
         castShadow
         shadow-mapSize={[2048, 2048]}
       />
       <directionalLight
         position={[-10, 10, -10]}
-        intensity={theme === 'dark' ? 0.3 : 0.5}
+        intensity={theme === 'dark' ? 0.4 : 0.6}
       />
 
       {/* Grid for scale reference */}
       <Grid
-        args={[300, 300]}
+        position={[0, bottomY, 0]}
+        args={[500, 500]}
         cellSize={10}
-        cellThickness={0.5}
+        cellThickness={1}
         cellColor={gridColor}
         sectionSize={50}
-        sectionThickness={1}
+        sectionThickness={2}
         sectionColor={sectionColor}
-        fadeDistance={400}
+        fadeDistance={500}
         fadeStrength={1}
         followCamera={false}
         infiniteGrid
       />
 
       {/* Frame mesh */}
-      <Center>
-        <FrameMesh />
-      </Center>
+      <FrameMesh color={meshColor} accentColor={accentColor} />
 
       {/* Camera controls */}
       <OrbitControls

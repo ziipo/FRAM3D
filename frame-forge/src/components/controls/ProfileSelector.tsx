@@ -15,13 +15,13 @@ export function ProfileSelector() {
             <button
               key={profile.id}
               onClick={() => setParam('profileId', profile.id)}
-              className={`p-2 rounded border transition-colors text-left ${
+              className={`p-2 rounded-none border transition-colors text-left ${
                 isActive
-                  ? 'border-blue-500 bg-blue-500/20'
+                  ? 'border-primary bg-primary/20'
                   : 'border-[var(--border-input)] bg-[var(--bg-input)] hover:border-[var(--fg-muted)]'
               }`}
             >
-              <div className="h-12 mb-2 flex items-center justify-center bg-[var(--bg-sidebar)] rounded border border-[var(--border-main)]">
+              <div className="h-12 mb-2 flex items-center justify-center bg-[var(--bg-sidebar)] rounded-none border border-[var(--border-main)]">
                 <ProfileThumbnail profile={profile} />
               </div>
               <div className="text-[10px] text-[var(--fg-main)] font-medium truncate">
@@ -34,13 +34,13 @@ export function ProfileSelector() {
         {/* Custom profile button */}
         <button
           onClick={() => setParam('profileId', 'custom')}
-          className={`p-2 rounded border transition-colors text-left ${
+          className={`p-2 rounded-none border transition-colors text-left ${
             profileId === 'custom'
-              ? 'border-blue-500 bg-blue-500/20'
+              ? 'border-primary bg-primary/20'
               : 'border-[var(--border-input)] bg-[var(--bg-input)] hover:border-[var(--fg-muted)]'
           }`}
         >
-          <div className="h-12 mb-2 flex items-center justify-center bg-[var(--bg-sidebar)] rounded border border-[var(--border-main)]">
+          <div className="h-12 mb-2 flex items-center justify-center bg-[var(--bg-sidebar)] rounded-none border border-[var(--border-main)]">
             <CustomProfileIcon />
           </div>
           <div className="text-[10px] text-[var(--fg-main)] font-medium truncate">
